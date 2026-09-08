@@ -81,8 +81,12 @@
       <label>Email</label>
       <input id="email" type="email" placeholder="you@example.com">
     </div>
-    <button class="primary" style="width:100%;margin-top:12px" onclick="sendLink()">Email me a login link</button>
-    <p class="hint" id="loginMsg">A one-time sign-in link will be emailed to you.</p>
+    <div class="field" style="text-align:left;margin-top:10px">
+      <label>Password</label>
+      <input id="password" type="password" placeholder="your password" onkeydown="if(event.key==='Enter')signIn()">
+    </div>
+    <button class="primary" style="width:100%;margin-top:14px" onclick="signIn()">Sign in</button>
+    <p class="hint" id="loginMsg">Use the email &amp; password you set up in Supabase.</p>
   </div>
 </div>
 
@@ -162,12 +166,12 @@ const FIELDS = [
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 
 // ---------------- auth ----------------
-async function sendLink(){
+async function signIn(){
   const email=document.getElementById('email').value.trim();
-  if(!email)return;
-  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.href}});
-  document.getElementById('loginMsg').textContent =
-    error ? ("Error: "+error.message) : "Check your email for the sign-in link.";
+  const password=document.getElementById('password').value;
+  if(!email||!password){document.getElementById('loginMsg').textContent="Enter your email and password.";return;}
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error) document.getElementById('loginMsg').textContent="Error: "+error.message;
 }
 async function signOut(){ await sb.auth.signOut(); location.reload(); }
 
