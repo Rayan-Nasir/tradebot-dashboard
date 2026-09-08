@@ -84,9 +84,13 @@
     animation:breathe 3.4s ease-in-out infinite}
   @keyframes breathe{0%,100%{box-shadow:0 0 40px rgba(57,208,255,.35) inset,0 0 20px rgba(57,208,255,.25)}
     50%{box-shadow:0 0 60px rgba(57,208,255,.6) inset,0 0 34px rgba(57,208,255,.45)}}
-  .core.signal{background:radial-gradient(circle at 50% 42%, rgba(34,227,154,.4), rgba(8,26,20,.92) 70%);
+  .core.long{background:radial-gradient(circle at 50% 42%, rgba(34,227,154,.4), rgba(8,26,20,.92) 70%);
     box-shadow:0 0 60px rgba(34,227,154,.55) inset,0 0 34px rgba(34,227,154,.5)}
-  .core.halt{background:radial-gradient(circle at 50% 42%, rgba(255,93,108,.35), rgba(30,10,14,.92) 70%)}
+  .core.short{background:radial-gradient(circle at 50% 42%, rgba(255,93,108,.4), rgba(30,10,14,.92) 70%);
+    box-shadow:0 0 60px rgba(255,93,108,.5) inset,0 0 34px rgba(255,93,108,.45)}
+  .core.halt{background:radial-gradient(circle at 50% 42%, rgba(255,207,90,.3), rgba(30,24,10,.92) 70%)}
+  .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.04em}
+  .tag.long{background:rgba(34,227,154,.16);color:var(--good)} .tag.short{background:rgba(255,93,108,.16);color:var(--bad)}
   .core-state{font-weight:800;letter-spacing:3px;font-size:20px}
   .core-sub{font-size:11px;color:var(--ink-2);margin-top:3px;letter-spacing:.06em;max-width:150px}
   .notice{margin-top:6px;text-align:center;color:var(--ink-2);font-size:13px;min-height:1.4em}
@@ -95,7 +99,8 @@
   /* satellites */
   .sats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
   .sat{min-width:120px;padding:10px 12px;border-radius:13px;border:1px solid var(--line);background:var(--panel-2);text-align:center;transition:.15s}
-  .sat.hot{border-color:var(--good);box-shadow:0 0 16px rgba(34,227,154,.35)}
+  .sat.long{border-color:var(--good);box-shadow:0 0 16px rgba(34,227,154,.35)}
+  .sat.short{border-color:var(--bad);box-shadow:0 0 16px rgba(255,93,108,.35)}
   .sat .s{font-weight:700;font-size:13px}
   .sat .p{font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:12px;margin-top:2px}
   .dots{display:flex;gap:4px;justify-content:center;margin-top:7px}
@@ -175,13 +180,19 @@ const TABS=["Command","Trades","Markets","Settings"];
 let active="Command", S={}, T=[], pnlChart, wlChart;
 const FIELDS=[
   ["symbols","Pairs (comma separated)","text"],["timeframe","Candle timeframe","text"],
-  ["poll_seconds","Check every (seconds)","number"],["risk_per_trade_pct","Risk per trade (%)","number"],
-  ["stop_loss_pct","Stop-loss (%)","number"],["reward_risk","Reward : risk","number"],
+  ["poll_seconds","Check every (seconds)","number"],["leverage","Leverage (×)","number"],
+  ["allow_long","Allow longs","bool"],["allow_short","Allow shorts","bool"],
+  ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
+  ["risk_per_trade_pct","Risk per trade (%)","number"],["reward_risk","Reward : risk","number"],
   ["max_open_positions","Max open positions","number"],["daily_loss_limit_pct","Daily loss limit (%)","number"],
-  ["daily_profit_target_pct","Daily profit target (%)","number"],["rsi_max_entry","Don't buy above RSI","number"],
-  ["ema_fast","EMA fast","number"],["ema_slow","EMA slow","number"],
-  ["rsi_period","RSI period","number"],["min_notional_usdt","Min trade size (USDT)","number"],
+  ["daily_profit_target_pct","Daily profit target (%)","number"],["ema_fast","EMA fast","number"],
+  ["ema_slow","EMA slow","number"],["rsi_period","RSI period","number"],
+  ["atr_period","ATR period","number"],["min_notional_usdt","Min trade size (USDT)","number"],
 ];
+const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
+  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,risk_per_trade_pct:1,reward_risk:1.5,
+  max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,ema_fast:9,ema_slow:21,rsi_period:14,
+  atr_period:14,min_notional_usdt:11};
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
 
@@ -193,114 +204,168 @@ async function signOut(){await sb.auth.signOut();location.reload();}
 async function boot(){const {data:{session}}=await sb.auth.getSession(); session?showApp():(login.hidden=false);}
 sb.auth.onAuthStateChange((_e,s)=>{if(s)showApp();});
 
+let lastTLen=-1;
 async function showApp(){
   login.hidden=true; app.hidden=false;
   tabs.innerHTML=TABS.map(t=>`<div class="tab ${t===active?'active':''}" onclick="go('${t}')">${t}</div>`).join('');
-  await Promise.all([fetchState(),fetchTrades()]); render();
+  await Promise.all([fetchState(),fetchTrades()]); build();
   sb.channel('rt')
-    .on('postgres_changes',{event:'*',schema:'public',table:'bot_state'},async()=>{await fetchState();render();})
-    .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async()=>{await fetchTrades();render();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'bot_state'},async()=>{await fetchState();live();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async()=>{await fetchTrades();live();})
     .subscribe();
-  setInterval(async()=>{await fetchState();render();},5000);
+  setInterval(async()=>{await fetchState();live();},5000);
 }
-function go(t){active=t;document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.textContent===t));render();}
+function go(t){active=t;document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.textContent===t));build();}
 async function fetchState(){const {data}=await sb.from('bot_state').select('data').eq('id',1).single();S=(data&&data.data)||{};}
-async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(1000);T=data||[];}
+async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(1000);T=data||[];lastTLen=T.length;}
 
-function render(){
+function syncHeader(){
   mode.textContent=S.mode||'—';
   if(S.control==='pause'){status.className='badge b-pause';status.textContent='PAUSED';}
   else if(S.halted){status.className='badge b-halt';status.textContent='HALTED';}
   else{status.className='badge b-run';status.textContent='ONLINE';}
+}
+// FULL build of the active tab (on tab switch / first load)
+function build(){
+  syncHeader();
   view.innerHTML=({Command:vCommand,Trades:vTrades,Markets:vMarkets,Settings:vSettings}[active])();
-  if(active==='Trades'){drawPnl();drawWL();}
+  if(active==='Command')syncCommand();
+  if(active==='Trades'){drawPnl();drawWL();syncTrades();}
+  if(active==='Markets')syncMarkets();
   if(active==='Settings')fillSettings();
+}
+// LIGHT update on live data — never disturbs the Settings form or the reactor DOM
+function live(){
+  syncHeader();
+  if(active==='Settings') return;                 // leave the form alone while editing
+  if(active==='Command'){ syncCommand(); return; }// update readouts, reactor keeps spinning
+  if(active==='Markets'){ syncMarkets(); return; }
+  if(active==='Trades'){ if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();} syncTrades(); }
 }
 
 // headline: what is Treo noticing?
 function headline(){
   const sig=S.signals||{}, keys=Object.keys(sig);
-  const hot=keys.find(k=>sig[k].signal==='long');
+  const hotK=keys.find(k=>sig[k].signal);
   if(S.halted) return {state:'HALTED',cls:'halt',sub:S.halt_reason||'stood down',note:S.halt_reason||''};
   if(S.control==='pause') return {state:'PAUSED',cls:'halt',sub:'holding',note:'Trading paused'};
-  if(hot) return {state:'SIGNAL',cls:'signal',sub:hot,note:`<b>${hot}</b> — all conditions aligned, entering long`};
-  // closest to a signal
-  let best=null,bc=-1;
-  keys.forEach(k=>{const c=sig[k].checks||{};const n=(c.trend?1:0)+(c.engulfing?1:0)+(c.rsi_ok?1:0);if(n>bc){bc=n;best=k;}});
-  const sub = keys.length?`${keys.length} markets`:'connecting';
-  const note = best!=null?`Closest: <b>${best}</b> — ${bc}/3 conditions`:'Scanning the markets…';
+  if(hotK){const dir=sig[hotK].signal;
+    return {state:dir.toUpperCase(),cls:dir,sub:hotK,
+      note:`<b>${hotK}</b> — confluence aligned, entering <b>${dir}</b>`};}
+  // closest to a signal (highest single-side score)
+  let best=null,bc=-1,bd='';
+  keys.forEach(k=>{const s=sig[k].score||{long:0,short:0};const m=Math.max(s.long,s.short);
+    if(m>bc){bc=m;best=k;bd=s.long>=s.short?'long':'short';}});
+  const sub=keys.length?`${keys.length} markets`:'connecting';
+  const note=best!=null?`Closest: <b>${best}</b> — ${bc}/4 ${bd} votes`:'Scanning the markets…';
   return {state:'SCANNING',cls:'',sub,note};
 }
 
+// Static skeleton — the reactor rings live here and are NEVER rebuilt on refresh,
+// so their CSS animation keeps spinning continuously.
 function vCommand(){
-  const h=headline(), pnl=S.day_pnl_pct||0, c=pnl>=0?'pos':'neg';
-  const sig=S.signals||{};
-  const sats=Object.keys(sig).map(s=>{const o=sig[s],ch=o.checks||{},hot=o.signal==='long';
-    return `<div class="sat ${hot?'hot':''}"><div class="s">${s.replace('/USDT','')}</div>
-      <div class="p">${fmt(o.price)}</div>
-      <div class="dots"><span class="d ${ch.trend?'on':''}"></span><span class="d ${ch.engulfing?'on':''}"></span><span class="d ${ch.rsi_ok?'on':''}"></span></div></div>`;}).join('');
-  const last=(S.activity||[]).slice().reverse().find(a=>a.kind==='trade')||(S.activity||[]).slice(-1)[0];
-  const tick = last?`<div class="ticker"><span class="fdot"></span><span class="mono">${(last.t||'').slice(11)}</span>
-     <span>${last.symbol||''} — ${last.text||''}</span></div>`:'';
   return `<div class="hud">
     <div class="reactor">
       <div class="ring r-tick"></div><div class="ring r-sweep"></div><div class="ring r-sweep rev"></div>
       <div class="ring r-inner"></div>
-      <div class="core ${h.cls}"><div><div class="core-state">${h.state}</div><div class="core-sub">${h.sub}</div></div></div>
+      <div class="core" id="coreEl"><div><div class="core-state" id="coreState">—</div>
+        <div class="core-sub" id="coreSub"></div></div></div>
     </div>
-    <div class="notice">${h.note}</div>
-    <div class="sats">${sats||'<span class="mut">connecting…</span>'}</div>
-    ${tick}
+    <div class="notice" id="notice"></div>
+    <div class="sats" id="sats"></div>
+    <div id="tickerBox"></div>
   </div>
-  <div class="cards" style="margin-top:20px">
-    ${card('Balance (USDT)',(S.balance||0).toFixed(2))}
-    ${card('Today P&L',`<span class="${c}">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span>`)}
-    ${card('Open',(S.open_count||0)+' / '+(S.max_positions??'—'))}
-    ${card('Win rate',S.win_rate!=null?S.win_rate+'%':'—')}
-    ${card('Scans',S.cycles||0)}</div>
-  <p class="mut" style="margin-top:12px;font-size:12px">watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago(S.updated)}</p>`;
+  <div class="cards" id="kpis" style="margin-top:20px"></div>
+  <p class="mut" id="cmdfoot" style="margin-top:12px;font-size:12px"></p>`;
+}
+// Update only the readouts in place; the reactor DOM is untouched.
+function syncCommand(){
+  const el=id=>document.getElementById(id);
+  if(!el('coreEl')) return;
+  const h=headline(), sig=S.signals||{}, pnl=S.day_pnl_pct||0, c=pnl>=0?'pos':'neg';
+  el('coreEl').className='core '+h.cls;
+  el('coreState').textContent=h.state;
+  el('coreSub').textContent=h.sub;
+  el('notice').innerHTML=h.note;
+  el('sats').innerHTML=Object.keys(sig).map(s=>{const o=sig[s];const sc=o.score||{long:0,short:0};
+    const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const m=Math.max(sc.long,sc.short);
+    const tag=lean==='—'?'<span class="mut" style="font-size:11px">flat</span>':
+      `<span class="tag ${lean}">${lean==='long'?'▲ LONG':'▼ SHORT'} ${m}/4</span>`;
+    return `<div class="sat ${o.signal||''}"><div class="s">${s.replace('/USDT','')}</div>
+      <div class="p">${fmt(o.price)}</div><div style="margin-top:7px">${tag}</div></div>`;}).join('')
+    ||'<span class="mut">connecting…</span>';
+  const last=(S.activity||[]).slice().reverse().find(a=>a.kind==='trade')||(S.activity||[]).slice(-1)[0];
+  el('tickerBox').innerHTML=last?`<div class="ticker"><span class="fdot"></span>
+    <span class="mono">${(last.t||'').slice(11)}</span><span>${last.symbol||''} — ${last.text||''}</span></div>`:'';
+  el('kpis').innerHTML =
+    card('Balance (USDT)',(S.balance||0).toFixed(2))+
+    card('Today P&L',`<span class="${c}">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span>`)+
+    card('Open',(S.open_count||0)+' / '+(S.max_positions??'—'))+
+    card('Win rate',S.win_rate!=null?S.win_rate+'%':'—')+
+    card('Scans',S.cycles||0);
+  el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${S.leverage||1}× · long+short · `+
+    `watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago(S.updated)}`;
 }
 
-function vTrades(){
-  const wins=T.filter(x=>+x.pnl_pct>0),losses=T.filter(x=>+x.pnl_pct<=0);
-  const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
-  const net=T.reduce((s,x)=>s+ +x.pnl_pct,0);
-  let rows=T.slice().reverse();
-  if(tf==='wins')rows=rows.filter(x=>+x.pnl_pct>0); if(tf==='losses')rows=rows.filter(x=>+x.pnl_pct<=0);
-  const tbl=rows.length?`<table><tr><th>Time</th><th>Pair</th><th>Entry</th><th>Exit</th><th>Result</th><th>P&L</th><th>Why</th></tr>`+
-    rows.map(x=>{const c=+x.pnl_pct>=0?'pos':'neg';return `<tr><td class="mut">${x.ts||''}</td><td>${x.symbol}</td>
-      <td>${fmt(x.entry)}</td><td>${fmt(x.exit)}</td><td>${x.result}</td>
-      <td class="${c}">${+x.pnl_pct>=0?'+':''}${(+x.pnl_pct).toFixed(2)}%</td><td class="mut">${x.reason||''}</td></tr>`;}).join('')+`</table>`
-    :'<p class="mut" style="padding:8px">No trades in this view yet.</p>';
-  return `<h2>Performance</h2>
+function vTrades(){   // skeleton — charts persist, data fills via syncTrades
+  return `<h2>Open now</h2><div id="topen"></div>
+    <h2>Performance</h2>
     <div class="charts">
       <div class="glass panel"><strong style="font-size:13px">Cumulative P&amp;L (%)</strong><canvas id="pnlChart"></canvas></div>
       <div class="glass panel"><strong style="font-size:13px">Win / loss</strong><canvas id="wlChart"></canvas>
         <p class="mut" id="wlNote" style="text-align:center;margin:0"></p></div></div>
-    <h2>Stats</h2><div class="cards">
-      ${card('Total',T.length)}${card('Win rate',T.length?Math.round(wins.length/T.length*100)+'%':'—')}
-      ${card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)}
-      ${card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)}
-      ${card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`)}</div>
-    <h2>History</h2>
+    <h2>Stats</h2><div class="cards" id="tstats"></div>
+    <h2>Closed trades</h2>
     <div class="filterbar">
       <button class="mini ${tf==='all'?'on':''}" onclick="setTf('all')">All</button>
       <button class="mini ${tf==='wins'?'on':''}" onclick="setTf('wins')">Wins</button>
       <button class="mini ${tf==='losses'?'on':''}" onclick="setTf('losses')">Losses</button></div>
-    <div class="glass panel tblwrap">${tbl}</div>`;
+    <div class="glass panel tblwrap" id="thist"></div>`;
 }
-let tf='all'; function setTf(f){tf=f;render();}
+let tf='all'; function setTf(f){tf=f;syncTrades();document.querySelectorAll('.filterbar .mini').forEach(b=>b.classList.toggle('on',b.textContent.toLowerCase()===f));}
+function syncTrades(){
+  const el=id=>document.getElementById(id); if(!el('tstats'))return;
+  // open positions (live) — so you can see what Treo is holding right now
+  const p=S.positions||{}; const pk=Object.keys(p);
+  el('topen').innerHTML = pk.length? `<div class="glass panel tblwrap"><table>
+    <tr><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>`+
+    pk.map(s=>{const o=p[s];const side=o.side||'long';const u=o.unreal_pct||0;const c=u>=0?'pos':'neg';
+      return `<tr><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
+        <td>${fmt(o.entry)}</td><td>${fmt(o.stop)}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
+        <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td></tr>`;}).join('')+`</table></div>`
+    : '<p class="mut" style="padding:8px">No open positions right now — Treo opens one when a setup clears the vote threshold.</p>';
+  // stats
+  const wins=T.filter(x=>+x.pnl_pct>0),losses=T.filter(x=>+x.pnl_pct<=0);
+  const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
+  const net=T.reduce((s,x)=>s+ +x.pnl_pct,0);
+  el('tstats').innerHTML=card('Total',T.length)+card('Win rate',T.length?Math.round(wins.length/T.length*100)+'%':'—')+
+    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+
+    card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
+    card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
+  // closed history
+  let rows=T.slice().reverse();
+  if(tf==='wins')rows=rows.filter(x=>+x.pnl_pct>0); if(tf==='losses')rows=rows.filter(x=>+x.pnl_pct<=0);
+  el('thist').innerHTML=rows.length?`<table><tr><th>Time</th><th>Pair</th><th>Entry</th><th>Exit</th><th>Result</th><th>P&L</th><th>Why</th></tr>`+
+    rows.map(x=>{const c=+x.pnl_pct>=0?'pos':'neg';return `<tr><td class="mut">${x.ts||''}</td><td>${x.symbol}</td>
+      <td>${fmt(x.entry)}</td><td>${fmt(x.exit)}</td><td>${x.result}</td>
+      <td class="${c}">${+x.pnl_pct>=0?'+':''}${(+x.pnl_pct).toFixed(2)}%</td><td class="mut">${x.reason||''}</td></tr>`;}).join('')+`</table>`
+    : '<p class="mut" style="padding:8px">No <b>closed</b> trades yet. A trade appears here only once it hits its stop or target — check "Open now" above for live positions.</p>';
+}
 
-function vMarkets(){
+function vMarkets(){ return `<h2>Markets</h2><div id="marketsBox"></div>`; }
+function syncMarkets(){
+  const box=document.getElementById('marketsBox'); if(!box)return;
   const sig=S.signals||{};
-  const rows=Object.keys(sig).map(s=>{const o=sig[s],ind=o.indicators||{},ch=o.checks||{};
+  const rows=Object.keys(sig).map(s=>{const o=sig[s],ind=o.indicators||{},sc=o.score||{long:0,short:0};
+    const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const m=Math.max(sc.long,sc.short);
+    const bias=lean==='—'?'<span class="mut">flat</span>':`<span class="${lean==='long'?'pos':'neg'}">${lean==='long'?'▲':'▼'} ${lean} ${m}/4</span>`;
+    const read=o.signal?`<span class="${o.signal==='long'?'pos':'neg'}"><b>${o.signal.toUpperCase()}</b></span>`:`<span class="mut">${o.reason||''}</span>`;
     return `<tr><td><b>${s}</b></td><td>${fmt(o.price)}</td>
       <td class="${ind.trend==='up'?'pos':'neg'}">${ind.trend==='up'?'▲ up':(ind.trend==='down'?'▽ down':'—')}</td>
-      <td>${o.rsi!=null?o.rsi:'—'}</td><td>${ch.engulfing?'<span class="pos">yes</span>':'<span class="mut">no</span>'}</td>
-      <td>${o.signal==='long'?'<span class="pos"><b>LONG</b></span>':'<span class="mut">'+(o.reason||'')+'</span>'}</td></tr>`;}).join('')
+      <td>${o.rsi!=null?o.rsi:'—'}</td><td>${bias}</td><td>${read}</td></tr>`;}).join('')
     ||'<tr><td class="mut" colspan="6">Waiting for data…</td></tr>';
-  return `<h2>Markets</h2><div class="glass panel tblwrap"><table>
-    <tr><th>Pair</th><th>Price</th><th>Trend</th><th>RSI</th><th>Engulfing</th><th>Read</th></tr>${rows}</table></div>
+  box.innerHTML=`<div class="glass panel tblwrap"><table>
+    <tr><th>Pair</th><th>Price</th><th>Trend</th><th>RSI</th><th>Bias (votes)</th><th>Read</th></tr>${rows}</table></div>
     <h2>Recent activity</h2><div class="glass feed mono">${
       (S.activity||[]).slice().reverse().slice(0,30).map(a=>`<div class="frow"><span class="ftime">${(a.t||'').slice(11)}</span>
         <span class="fsym">${a.symbol||''}</span><span class="ftxt">${a.text||''}</span></div>`).join('')||'<p class="mut" style="padding:8px">No activity yet.</p>'}</div>`;
@@ -315,11 +380,17 @@ function vSettings(){
 }
 async function fillSettings(){const {data}=await sb.from('bot_config').select('data').eq('id',1).single();
   const d=(data&&data.data)||{};const box=document.getElementById('settings');if(!box)return;
-  box.innerHTML=FIELDS.map(([k,label,type])=>{let v=d[k];if(Array.isArray(v))v=v.join(', ');
+  box.innerHTML=FIELDS.map(([k,label,type])=>{
+    let v=d[k]; if(v==null)v=DEFAULTS[k]; if(Array.isArray(v))v=v.join(', ');
+    if(type==='bool'){const on=(v===true||v==='true');
+      return `<div class="field"><label>${label}</label><select id="f_${k}">
+        <option value="true" ${on?'selected':''}>On</option><option value="false" ${!on?'selected':''}>Off</option></select></div>`;}
     return `<div class="field"><label>${label}</label><input id="f_${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;}).join('');}
 async function saveSettings(){const patch={};
   for(const [k,,type] of FIELDS){const el=document.getElementById('f_'+k);if(!el)continue;
-    patch[k]=k==='symbols'?el.value:(type==='number'?Number(el.value):el.value);}
+    if(type==='bool'){patch[k]=el.value==='true';continue;}
+    if(type==='number'){if(el.value.trim()==='')continue; patch[k]=Number(el.value);continue;}
+    patch[k]=el.value;}
   const {data}=await sb.from('bot_config').select('revision').eq('id',1).single();
   const rev=((data&&data.revision)||0)+1;
   const {error}=await sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',1);
