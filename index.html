@@ -258,7 +258,12 @@ function go(t){active=t;document.querySelectorAll('.tab').forEach(el=>el.classLi
 async function fetchState(){const {data}=await sb.from('bot_state').select('data').eq('id',1).single();S=(data&&data.data)||{};}
 async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(1000);T=data||[];lastTLen=T.length;}
 
-function staleSecs(){if(!S.updated)return null;const t=Date.parse(String(S.updated).replace(' ','T'));
+function staleSecs(){
+  // Prefer the unambiguous epoch stamp; it's timezone-proof.
+  if(typeof S.updated_ts==='number') return Math.max(0,Math.round(Date.now()/1000 - S.updated_ts));
+  if(!S.updated)return null;
+  // fallback: the server runs UTC and stamps a naive time, so read it AS UTC
+  const t=Date.parse(String(S.updated).replace(' ','T')+'Z');
   if(isNaN(t))return null;return Math.max(0,Math.round((Date.now()-t)/1000));}
 function syncHeader(){
   mode.textContent=(S.market_type?S.market_type.toUpperCase():'—')+(S.mode?(' · '+S.mode):'');
@@ -375,7 +380,7 @@ function syncCommand(){
   const dir=S.allow_short?'long+short':'long only';
   const lev=(S.market_type==='spot')?'spot':`${S.leverage||1}×`;
   el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${lev} · ${dir}${fng} · `+
-    `watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago(S.updated)}`;
+    `watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago()}`;
 }
 
 function vTrades(){   // skeleton — charts persist, data fills via syncTrades
@@ -496,7 +501,8 @@ async function fillSettings(announce){
         let v=savedCfg[k]; if(v==null)v=DEFAULTS[k]; return fieldHTML(k,label,type,v);}).join('')}</div>
     </div>`).join('');
   const mode=(savedCfg.market_type||'future');
-  const npairs=Array.isArray(savedCfg.symbols)?savedCfg.symbols.length:(DEFAULTS.symbols.split(',').length);
+  const symv=savedCfg.symbols!=null?savedCfg.symbols:DEFAULTS.symbols;
+  const npairs=Array.isArray(symv)?symv.length:String(symv).split(',').filter(x=>x.trim()).length;
   const when=data&&data.updated_at?new Date(data.updated_at).toLocaleString():'—';
   if(st)st.innerHTML=`showing <b style="color:var(--ink)">saved</b> settings · ${mode.toUpperCase()} · ${npairs} pairs · updated ${when}`;
   if(announce){const m=document.getElementById('savedMsg');if(m){m.hidden=false;m.textContent='Reloaded the saved settings from the server.';setTimeout(()=>{if(m)m.hidden=true},3000);}}
@@ -542,8 +548,8 @@ function drawWL(){const ctx=document.getElementById('wlChart');if(!ctx)return;
         tooltip:{backgroundColor:'#0e1626',titleColor:css('--ink'),bodyColor:css('--ink-2'),borderColor:css('--line-2'),borderWidth:1}}}});}
 
 function card(k,v){return `<div class="glass card"><div class="k">${k}</div><div class="v">${v}</div></div>`}
-function ago(ts){if(!ts)return 'no data yet';const t=Date.parse(ts.replace(' ','T'));if(isNaN(t))return 'updated '+ts;
-  const s=Math.max(0,Math.round((Date.now()-t)/1000));return s<60?`last scan ${s}s ago`:`last scan ${Math.round(s/60)}m ago`;}
+function ago(){const s=staleSecs();if(s==null)return 'no data yet';
+  return s<60?`last scan ${s}s ago`:`last scan ${Math.round(s/60)}m ago`;}
 
 const login=document.getElementById('login'),app=document.getElementById('app'),tabs=document.getElementById('tabs'),
   view=document.getElementById('view'),mode=document.getElementById('mode'),status=document.getElementById('status'),
