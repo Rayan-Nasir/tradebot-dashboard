@@ -162,6 +162,7 @@
     <span class="spacer"></span>
     <button class="mini" onclick="setControl('run')">Run</button>
     <button class="mini" onclick="setControl('pause')">Pause</button>
+    <button class="mini" onclick="flatten()">Flatten</button>
     <button class="mini" onclick="setControl('stop')">Stop</button>
     <button class="mini" onclick="signOut()">Exit</button>
   </div>
@@ -183,6 +184,7 @@ const FIELDS=[
   ["poll_seconds","Check every (seconds)","number"],["leverage","Leverage (×)","number"],
   ["allow_long","Allow longs","bool"],["allow_short","Allow shorts","bool"],
   ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
+  ["min_stop_pct","Min stop width (%)","number"],
   ["trend_ema","Trend-context EMA (0=off)","number"],["adx_min","Min trend strength ADX (0=off)","number"],
   ["use_fng","Use Fear & Greed filter","bool"],["fng_extreme_greed","Block longs above F&G","number"],
   ["fng_extreme_fear","Block shorts below F&G","number"],
@@ -194,14 +196,14 @@ const FIELDS=[
   ["daily_profit_target_pct","Daily profit target (%)","number"],["ema_fast","EMA fast","number"],
   ["ema_slow","EMA slow","number"],["rsi_period","RSI period","number"],
   ["adx_period","ADX period","number"],["atr_period","ATR period","number"],
-  ["min_notional_usdt","Min trade size (USDT)","number"],
+  ["min_notional_usdt","Min trade size (USDT)","number"],["fee_pct","Fee per trade (%)","number"],
 ];
 const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
-  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,trend_ema:100,adx_min:18,
+  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,min_stop_pct:0.3,trend_ema:100,adx_min:18,
   use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
   rsi_overbought:78,rsi_oversold:22,use_exchange_stop:true,breakeven_at_r:1,trail_atr_mult:1.5,cooldown_minutes:10,
   risk_per_trade_pct:1,reward_risk:1.5,max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,
-  ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,min_notional_usdt:11};
+  ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,min_notional_usdt:11,fee_pct:0.09};
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
 
@@ -324,7 +326,8 @@ function vTrades(){   // skeleton — charts persist, data fills via syncTrades
       <div class="glass panel"><strong style="font-size:13px">Cumulative P&amp;L (%)</strong><canvas id="pnlChart"></canvas></div>
       <div class="glass panel"><strong style="font-size:13px">Win / loss</strong><canvas id="wlChart"></canvas>
         <p class="mut" id="wlNote" style="text-align:center;margin:0"></p></div></div>
-    <h2>Stats</h2><div class="cards" id="tstats"></div>
+    <h2>Stats <span class="mut" style="text-transform:none;letter-spacing:0">— net of fees</span></h2><div class="cards" id="tstats"></div>
+    <h2>Breakdown — what's actually working</h2><div id="tbreak"></div>
     <h2>Closed trades</h2>
     <div class="filterbar">
       <button class="mini ${tf==='all'?'on':''}" onclick="setTf('all')">All</button>
@@ -333,6 +336,13 @@ function vTrades(){   // skeleton — charts persist, data fills via syncTrades
     <div class="glass panel tblwrap" id="thist"></div>`;
 }
 let tf='all'; function setTf(f){tf=f;syncTrades();document.querySelectorAll('.filterbar .mini').forEach(b=>b.classList.toggle('on',b.textContent.toLowerCase()===f));}
+function grp(list,keyfn){const m={};list.forEach(x=>{const k=keyfn(x);if(k==null)return;(m[k]=m[k]||[]).push(+x.pnl_pct);});
+  return Object.entries(m).map(([k,v])=>({k,n:v.length,w:v.filter(p=>p>0).length,net:v.reduce((a,b)=>a+b,0)})).sort((a,b)=>b.net-a.net);}
+function btable(title,arr){ if(!arr.length)return '';
+  return `<div class="glass panel" style="margin-bottom:12px"><strong style="font-size:13px">${title}</strong>
+   <table style="margin-top:6px"><tr><th>${title}</th><th>Trades</th><th>Win%</th><th>Net</th></tr>`+
+   arr.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.w/r.n*100)}%</td>
+     <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
 function syncTrades(){
   const el=id=>document.getElementById(id); if(!el('tstats'))return;
   // open positions (live) — so you can see what Treo is holding right now
@@ -352,6 +362,12 @@ function syncTrades(){
     card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+
     card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
     card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
+  // breakdown — which side / pair / signal-strength is actually winning
+  el('tbreak').innerHTML = T.length ? (
+    btable('Side',            grp(T,x=>(x.result||'').split(' ')[0]||null)) +
+    btable('Pair',            grp(T,x=>x.symbol)) +
+    btable('Signal strength', grp(T,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
+  ) : '<p class="mut" style="padding:8px">Breakdown appears once trades close.</p>';
   // closed history
   let rows=T.slice().reverse();
   if(tf==='wins')rows=rows.filter(x=>+x.pnl_pct>0); if(tf==='losses')rows=rows.filter(x=>+x.pnl_pct<=0);
@@ -409,6 +425,8 @@ async function saveSettings(){const patch={};
   const m=document.getElementById('savedMsg');m.hidden=false;
   m.textContent=error?('Error: '+error.message):'Saved — Treo will pick these up shortly.';setTimeout(()=>{if(m)m.hidden=true},4000);}
 async function setControl(w){await sb.from('bot_config').update({control:w,updated_at:new Date().toISOString()}).eq('id',1);}
+async function flatten(){ if(!confirm('Close ALL open positions now and pause the bot?'))return;
+  await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',1); }
 
 function baseOpts(){return {responsive:true,maintainAspectRatio:false,animation:false,
   plugins:{legend:{display:false},tooltip:{backgroundColor:'#0e1626',titleColor:css('--ink'),bodyColor:css('--ink-2'),borderColor:css('--line-2'),borderWidth:1}},
