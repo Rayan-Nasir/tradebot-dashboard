@@ -184,6 +184,8 @@ const FIELDS=[
   ["allow_long","Allow longs","bool"],["allow_short","Allow shorts","bool"],
   ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
   ["trend_ema","Trend-context EMA (0=off)","number"],["adx_min","Min trend strength ADX (0=off)","number"],
+  ["use_fng","Use Fear & Greed filter","bool"],["fng_extreme_greed","Block longs above F&G","number"],
+  ["fng_extreme_fear","Block shorts below F&G","number"],
   ["rsi_overbought","RSI overbought","number"],["rsi_oversold","RSI oversold","number"],
   ["use_exchange_stop","Stop lives on exchange","bool"],["breakeven_at_r","Break-even at R (0=off)","number"],
   ["trail_atr_mult","Trail stop = ATR × (0=off)","number"],["cooldown_minutes","Cooldown after loss (min)","number"],
@@ -196,6 +198,7 @@ const FIELDS=[
 ];
 const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
   leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,trend_ema:100,adx_min:18,
+  use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
   rsi_overbought:78,rsi_oversold:22,use_exchange_stop:true,breakeven_at_r:1,trail_atr_mult:1.5,cooldown_minutes:10,
   risk_per_trade_pct:1,reward_risk:1.5,max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,
   ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,min_notional_usdt:11};
@@ -309,7 +312,8 @@ function syncCommand(){
     card('Open',(S.open_count||0)+' / '+(S.max_positions??'—'))+
     card('Win rate',S.win_rate!=null?S.win_rate+'%':'—')+
     card('Scans',S.cycles||0);
-  el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${S.leverage||1}× · long+short · `+
+  const fng=(S.fng!=null)?` · F&G ${S.fng} ${S.fng_label||''}`:'';
+  el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${S.leverage||1}× · long+short${fng} · `+
     `watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago(S.updated)}`;
 }
 
