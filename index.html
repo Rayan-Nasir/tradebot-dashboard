@@ -183,16 +183,22 @@ const FIELDS=[
   ["poll_seconds","Check every (seconds)","number"],["leverage","Leverage (×)","number"],
   ["allow_long","Allow longs","bool"],["allow_short","Allow shorts","bool"],
   ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
+  ["trend_ema","Trend-context EMA (0=off)","number"],["adx_min","Min trend strength ADX (0=off)","number"],
+  ["rsi_overbought","RSI overbought","number"],["rsi_oversold","RSI oversold","number"],
+  ["use_exchange_stop","Stop lives on exchange","bool"],["breakeven_at_r","Break-even at R (0=off)","number"],
+  ["trail_atr_mult","Trail stop = ATR × (0=off)","number"],["cooldown_minutes","Cooldown after loss (min)","number"],
   ["risk_per_trade_pct","Risk per trade (%)","number"],["reward_risk","Reward : risk","number"],
   ["max_open_positions","Max open positions","number"],["daily_loss_limit_pct","Daily loss limit (%)","number"],
   ["daily_profit_target_pct","Daily profit target (%)","number"],["ema_fast","EMA fast","number"],
   ["ema_slow","EMA slow","number"],["rsi_period","RSI period","number"],
-  ["atr_period","ATR period","number"],["min_notional_usdt","Min trade size (USDT)","number"],
+  ["adx_period","ADX period","number"],["atr_period","ATR period","number"],
+  ["min_notional_usdt","Min trade size (USDT)","number"],
 ];
 const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
-  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,risk_per_trade_pct:1,reward_risk:1.5,
-  max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,ema_fast:9,ema_slow:21,rsi_period:14,
-  atr_period:14,min_notional_usdt:11};
+  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,trend_ema:100,adx_min:18,
+  rsi_overbought:78,rsi_oversold:22,use_exchange_stop:true,breakeven_at_r:1,trail_atr_mult:1.5,cooldown_minutes:10,
+  risk_per_trade_pct:1,reward_risk:1.5,max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,
+  ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,min_notional_usdt:11};
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
 
@@ -359,13 +365,15 @@ function syncMarkets(){
   const rows=Object.keys(sig).map(s=>{const o=sig[s],ind=o.indicators||{},sc=o.score||{long:0,short:0};
     const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const m=Math.max(sc.long,sc.short);
     const bias=lean==='—'?'<span class="mut">flat</span>':`<span class="${lean==='long'?'pos':'neg'}">${lean==='long'?'▲':'▼'} ${lean} ${m}/4</span>`;
+    const adx=ind.adx!=null?ind.adx:null; const adxc=adx!=null?(adx>=18?'pos':'mut'):'mut';
     const read=o.signal?`<span class="${o.signal==='long'?'pos':'neg'}"><b>${o.signal.toUpperCase()}</b></span>`:`<span class="mut">${o.reason||''}</span>`;
     return `<tr><td><b>${s}</b></td><td>${fmt(o.price)}</td>
       <td class="${ind.trend==='up'?'pos':'neg'}">${ind.trend==='up'?'▲ up':(ind.trend==='down'?'▽ down':'—')}</td>
-      <td>${o.rsi!=null?o.rsi:'—'}</td><td>${bias}</td><td>${read}</td></tr>`;}).join('')
-    ||'<tr><td class="mut" colspan="6">Waiting for data…</td></tr>';
+      <td>${o.rsi!=null?o.rsi:'—'}</td><td class="${adxc}">${adx!=null?adx:'—'}</td>
+      <td class="mut">${ind.context||'—'}</td><td>${bias}</td><td>${read}</td></tr>`;}).join('')
+    ||'<tr><td class="mut" colspan="8">Waiting for data…</td></tr>';
   box.innerHTML=`<div class="glass panel tblwrap"><table>
-    <tr><th>Pair</th><th>Price</th><th>Trend</th><th>RSI</th><th>Bias (votes)</th><th>Read</th></tr>${rows}</table></div>
+    <tr><th>Pair</th><th>Price</th><th>Trend</th><th>RSI</th><th>ADX</th><th>Context</th><th>Bias (votes)</th><th>Read</th></tr>${rows}</table></div>
     <h2>Recent activity</h2><div class="glass feed mono">${
       (S.activity||[]).slice().reverse().slice(0,30).map(a=>`<div class="frow"><span class="ftime">${(a.t||'').slice(11)}</span>
         <span class="fsym">${a.symbol||''}</span><span class="ftxt">${a.text||''}</span></div>`).join('')||'<p class="mut" style="padding:8px">No activity yet.</p>'}</div>`;
