@@ -41,10 +41,19 @@
   .badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.05em;
     border:1px solid var(--line-2)}
   .b-run{color:var(--good-ink)} .b-pause{color:var(--warn)} .b-halt{color:var(--bad)} .b-mode{color:var(--cyan)}
+  .b-off{color:var(--bad);border-color:var(--bad)}
+  .statusdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  @keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
+  .dot-run{background:var(--good);box-shadow:0 0 8px var(--good);animation:blip 1.5s infinite}
+  .dot-pause{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+  .dot-halt{background:var(--bad);box-shadow:0 0 8px var(--bad);animation:blip 1.1s infinite}
   button{font:inherit;cursor:pointer;border:1px solid var(--line-2);background:rgba(30,44,68,.5);color:var(--ink);
     padding:7px 13px;border-radius:10px;transition:.14s;letter-spacing:.02em}
   button:hover{border-color:var(--glow);box-shadow:0 0 12px rgba(57,208,255,.25)}
   button.primary{background:linear-gradient(90deg,var(--glow-2),var(--glow));color:#04121c;border-color:transparent;font-weight:700}
+  button.danger{background:linear-gradient(90deg,#b3202f,#ff5d6c);color:#fff;border-color:transparent;font-weight:700}
+  button.danger:hover{border-color:transparent;box-shadow:0 0 16px rgba(255,93,108,.5)}
+  button.ghost{background:transparent}
   button.mini{padding:5px 11px;font-size:12px}
   button.on{border-color:var(--glow);color:var(--glow);box-shadow:0 0 12px rgba(57,208,255,.25)}
   input,select{font:inherit;color:var(--ink);background:rgba(10,16,26,.7);border:1px solid var(--line-2);border-radius:9px;padding:8px 10px;width:100%}
@@ -159,12 +168,12 @@
     <div class="brand"><span class="spark"></span><span class="mark">TREO</span></div>
     <span id="mode" class="badge b-mode">—</span>
     <span id="status" class="badge b-run">—</span>
+    <span id="statusNote" class="mut" style="font-size:12px"></span>
     <span class="spacer"></span>
-    <button class="mini" onclick="setControl('run')">Run</button>
-    <button class="mini" onclick="setControl('pause')">Pause</button>
-    <button class="mini" onclick="flatten()">Flatten</button>
-    <button class="mini" onclick="setControl('stop')">Stop</button>
-    <button class="mini" onclick="signOut()">Exit</button>
+    <button class="mini" onclick="setControl('run')">▶ Run</button>
+    <button class="mini" onclick="setControl('pause')">⏸ Pause</button>
+    <button class="mini danger" onclick="flatten()">■ Stop &amp; Close All</button>
+    <button class="mini ghost" onclick="signOut()">Exit</button>
   </div>
   <div class="inner" style="padding-top:0"><div class="tabs" id="tabs"></div></div></div>
 
@@ -179,30 +188,49 @@ const cfg=window.APP_CONFIG;
 const sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
 const TABS=["Command","Trades","Markets","Settings"];
 let active="Command", S={}, T=[], pnlChart, wlChart;
-const FIELDS=[
-  ["symbols","Pairs (comma separated)","text"],["timeframe","Candle timeframe","text"],
-  ["poll_seconds","Check every (seconds)","number"],["leverage","Leverage (×)","number"],
-  ["allow_long","Allow longs","bool"],["allow_short","Allow shorts","bool"],
-  ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
-  ["min_stop_pct","Min stop width (%)","number"],
-  ["trend_ema","Trend-context EMA (0=off)","number"],["adx_min","Min trend strength ADX (0=off)","number"],
-  ["use_fng","Use Fear & Greed filter","bool"],["fng_extreme_greed","Block longs above F&G","number"],
-  ["fng_extreme_fear","Block shorts below F&G","number"],
-  ["rsi_overbought","RSI overbought","number"],["rsi_oversold","RSI oversold","number"],
-  ["use_exchange_stop","Stop lives on exchange","bool"],["breakeven_at_r","Break-even at R (0=off)","number"],
-  ["trail_atr_mult","Trail stop = ATR × (0=off)","number"],["cooldown_minutes","Cooldown after loss (min)","number"],
-  ["risk_per_trade_pct","Risk per trade (%)","number"],["reward_risk","Reward : risk","number"],
-  ["max_open_positions","Max open positions","number"],["daily_loss_limit_pct","Daily loss limit (%)","number"],
-  ["daily_profit_target_pct","Daily profit target (%)","number"],["ema_fast","EMA fast","number"],
-  ["ema_slow","EMA slow","number"],["rsi_period","RSI period","number"],
-  ["adx_period","ADX period","number"],["atr_period","ATR period","number"],
-  ["min_notional_usdt","Min trade size (USDT)","number"],["fee_pct","Fee per trade (%)","number"],
+// Settings are grouped into sections for a cleaner form. [key,label,type]
+const GROUPS=[
+  ["Mode & market",[
+    ["market_type","Market mode","mode"],["symbols","Pairs (comma separated)","text"],
+    ["timeframe","Candle timeframe","text"],["poll_seconds","Check every (seconds)","number"],
+    ["leverage","Leverage (× — futures only)","number"],
+    ["allow_long","Allow longs","bool"],["allow_short","Allow shorts (futures only)","bool"],
+  ]],
+  ["Daily goals",[
+    ["daily_profit_target_usd","Daily profit target (USDT, 0=off)","number"],
+    ["daily_loss_limit_usd","Daily loss limit (USDT, 0=off)","number"],
+    ["daily_profit_target_pct","…or profit target (%)","number"],
+    ["daily_loss_limit_pct","…or loss limit (%)","number"],
+  ]],
+  ["Signal engine",[
+    ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
+    ["min_stop_pct","Min stop width (%)","number"],
+    ["trend_ema","Trend-context EMA (0=off)","number"],["adx_min","Min trend strength ADX (0=off)","number"],
+    ["rsi_overbought","RSI overbought","number"],["rsi_oversold","RSI oversold","number"],
+    ["ema_fast","EMA fast","number"],["ema_slow","EMA slow","number"],
+    ["rsi_period","RSI period","number"],["adx_period","ADX period","number"],["atr_period","ATR period","number"],
+  ]],
+  ["Market sentiment",[
+    ["use_fng","Use Fear & Greed filter","bool"],["fng_extreme_greed","Block longs above F&G","number"],
+    ["fng_extreme_fear","Block shorts below F&G","number"],
+  ]],
+  ["Trade management",[
+    ["use_exchange_stop","Stop lives on exchange","bool"],["breakeven_at_r","Break-even at R (0=off)","number"],
+    ["trail_atr_mult","Trail stop = ATR × (0=off)","number"],["cooldown_minutes","Cooldown after loss (min)","number"],
+  ]],
+  ["Risk & size",[
+    ["risk_per_trade_pct","Risk per trade (%)","number"],["reward_risk","Reward : risk","number"],
+    ["max_open_positions","Max open positions","number"],
+    ["min_notional_usdt","Min trade size (USDT)","number"],["fee_pct","Fee per trade (%)","number"],
+  ]],
 ];
-const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
+const FIELDS=GROUPS.flatMap(g=>g[1]);   // flat list for save/coerce
+const DEFAULTS={market_type:'future',symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
   leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,min_stop_pct:0.3,trend_ema:100,adx_min:18,
   use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
   rsi_overbought:78,rsi_oversold:22,use_exchange_stop:true,breakeven_at_r:1,trail_atr_mult:1.5,cooldown_minutes:10,
   risk_per_trade_pct:1,reward_risk:1.5,max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,
+  daily_profit_target_usd:0,daily_loss_limit_usd:0,
   ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,min_notional_usdt:11,fee_pct:0.09};
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
@@ -230,11 +258,26 @@ function go(t){active=t;document.querySelectorAll('.tab').forEach(el=>el.classLi
 async function fetchState(){const {data}=await sb.from('bot_state').select('data').eq('id',1).single();S=(data&&data.data)||{};}
 async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(1000);T=data||[];lastTLen=T.length;}
 
+function staleSecs(){if(!S.updated)return null;const t=Date.parse(String(S.updated).replace(' ','T'));
+  if(isNaN(t))return null;return Math.max(0,Math.round((Date.now()-t)/1000));}
 function syncHeader(){
-  mode.textContent=S.mode||'—';
-  if(S.control==='pause'){status.className='badge b-pause';status.textContent='PAUSED';}
-  else if(S.halted){status.className='badge b-halt';status.textContent='HALTED';}
-  else{status.className='badge b-run';status.textContent='ONLINE';}
+  mode.textContent=(S.market_type?S.market_type.toUpperCase():'—')+(S.mode?(' · '+S.mode):'');
+  const note=document.getElementById('statusNote');
+  const s=staleSecs();
+  if(s!=null && s>90){   // no fresh scan for a while -> the bot may be down/restarting
+    status.className='badge b-off';status.innerHTML='<span class="statusdot dot-halt"></span>OFFLINE?';
+    if(note)note.innerHTML=`no update for ${s>120?Math.round(s/60)+'m':s+'s'} — bot may be restarting or stopped`;
+    return;
+  }
+  let cls,txt,dot,msg;
+  const reconnecting=/reconnect/i.test(S.halt_reason||'');
+  if(S.control==='pause'||S.control==='stop'){cls='b-pause';txt='PAUSED';dot='dot-pause';msg='holding — not opening new trades';}
+  else if(reconnecting){cls='b-halt';txt='RECONNECTING';dot='dot-halt';msg=S.halt_reason||'';}
+  else if(S.halted){cls='b-halt';txt='RESTING';dot='dot-halt';msg=S.halt_reason||'daily goal reached';}
+  else{cls='b-run';txt='RUNNING';dot='dot-run';msg='scanning & trading';}
+  status.className='badge '+cls;
+  status.innerHTML=`<span class="statusdot ${dot}"></span>${txt}`;
+  if(note)note.innerHTML=msg;
 }
 // FULL build of the active tab (on tab switch / first load)
 function build(){
@@ -258,8 +301,11 @@ function live(){
 function headline(){
   const sig=S.signals||{}, keys=Object.keys(sig);
   const hotK=keys.find(k=>sig[k].signal);
-  if(S.halted) return {state:'HALTED',cls:'halt',sub:S.halt_reason||'stood down',note:S.halt_reason||''};
-  if(S.control==='pause') return {state:'PAUSED',cls:'halt',sub:'holding',note:'Trading paused'};
+  const st=staleSecs();
+  if(st!=null&&st>90) return {state:'OFFLINE',cls:'halt',sub:'no signal',
+    note:'No update from the bot for a while — it may be restarting or stopped.'};
+  if(S.halted) return {state:'RESTING',cls:'halt',sub:'daily goal',note:S.halt_reason||'daily goal reached — resting till tomorrow'};
+  if(S.control==='pause'||S.control==='stop') return {state:'PAUSED',cls:'halt',sub:'holding',note:'Paused — not opening new trades'};
   if(hotK){const dir=sig[hotK].signal;
     return {state:dir.toUpperCase(),cls:dir,sub:hotK,
       note:`<b>${hotK}</b> — confluence aligned, entering <b>${dir}</b>`};}
@@ -308,14 +354,27 @@ function syncCommand(){
   const last=(S.activity||[]).slice().reverse().find(a=>a.kind==='trade')||(S.activity||[]).slice(-1)[0];
   el('tickerBox').innerHTML=last?`<div class="ticker"><span class="fdot"></span>
     <span class="mono">${(last.t||'').slice(11)}</span><span>${last.symbol||''} — ${last.text||''}</span></div>`:'';
+  const usd=S.day_pnl_usd||0, uc=usd>=0?'pos':'neg';
+  const usdStr=`${usd>=0?'+$':'−$'}${Math.abs(usd).toFixed(2)}`;
+  // daily goal progress card (USD goal wins; else % goal; else omit)
+  let goalCard='';
+  if((S.profit_target_usd||0)>0){const t=S.profit_target_usd;const pctToGoal=Math.max(0,Math.min(100,usd/t*100));
+    goalCard=card('Daily goal',`<span class="${uc}">${usdStr}</span> <span class="mut" style="font-size:13px">/ +$${(+t).toFixed(0)}</span>`+
+      `<div style="height:5px;border-radius:4px;background:rgba(120,150,190,.2);margin-top:7px;overflow:hidden"><div style="height:100%;width:${pctToGoal}%;background:var(--good)"></div></div>`);
+  }else if((S.profit_target_pct||0)>0){
+    goalCard=card('Daily goal',`<span class="${c}">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span> <span class="mut" style="font-size:13px">/ +${S.profit_target_pct}%</span>`);
+  }
   el('kpis').innerHTML =
     card('Balance (USDT)',(S.balance||0).toFixed(2))+
-    card('Today P&L',`<span class="${c}">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span>`)+
+    card('Today P&L',`<span class="${uc}">${usdStr}</span> <span class="mut" style="font-size:13px">(${pnl>=0?'+':''}${pnl.toFixed(2)}%)</span>`)+
+    goalCard+
     card('Open',(S.open_count||0)+' / '+(S.max_positions??'—'))+
     card('Win rate',S.win_rate!=null?S.win_rate+'%':'—')+
     card('Scans',S.cycles||0);
   const fng=(S.fng!=null)?` · F&G ${S.fng} ${S.fng_label||''}`:'';
-  el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${S.leverage||1}× · long+short${fng} · `+
+  const dir=S.allow_short?'long+short':'long only';
+  const lev=(S.market_type==='spot')?'spot':`${S.leverage||1}×`;
+  el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${lev} · ${dir}${fng} · `+
     `watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago(S.updated)}`;
 }
 
@@ -399,33 +458,67 @@ function syncMarkets(){
         <span class="fsym">${a.symbol||''}</span><span class="ftxt">${a.text||''}</span></div>`).join('')||'<p class="mut" style="padding:8px">No activity yet.</p>'}</div>`;
 }
 
+let savedCfg={};   // the last config we READ back from the server (source of truth)
 function vSettings(){
   return `<h2>Settings <span class="mut" style="text-transform:none;letter-spacing:0">— change here, Treo applies within seconds</span></h2>
-    <div class="glass panel"><div class="form-grid" id="settings"></div>
-      <div class="row" style="margin-top:14px"><button class="primary" onclick="saveSettings()">Save</button>
-        <span class="saved" id="savedMsg" hidden></span></div></div>
-    <p class="hint">More action on the testnet? Try a shorter timeframe (1m), more pairs, or a higher RSI ceiling. More trades ≠ more profit — each pays fees.</p>`;
+    <div class="glass panel" style="margin-bottom:14px">
+      <div class="row"><button class="primary" onclick="saveSettings()">Save changes</button>
+        <button class="mini" onclick="fillSettings(true)">Reload saved</button>
+        <span class="spacer"></span>
+        <span id="setStatus" class="mut" style="font-size:12px">loading…</span></div>
+      <div class="saved" id="savedMsg" hidden style="margin-top:8px"></div></div>
+    <div id="settings"></div>
+    <p class="hint">Your saved values load here every time — change what you want and hit <b>Save changes</b>. Switching Market mode (Futures ↔ Spot) applies after the bot restarts. More trades ≠ more profit — each pays fees.</p>`;
 }
-async function fillSettings(){const {data}=await sb.from('bot_config').select('data').eq('id',1).single();
-  const d=(data&&data.data)||{};const box=document.getElementById('settings');if(!box)return;
-  box.innerHTML=FIELDS.map(([k,label,type])=>{
-    let v=d[k]; if(v==null)v=DEFAULTS[k]; if(Array.isArray(v))v=v.join(', ');
-    if(type==='bool'){const on=(v===true||v==='true');
-      return `<div class="field"><label>${label}</label><select id="f_${k}">
-        <option value="true" ${on?'selected':''}>On</option><option value="false" ${!on?'selected':''}>Off</option></select></div>`;}
-    return `<div class="field"><label>${label}</label><input id="f_${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;}).join('');}
-async function saveSettings(){const patch={};
+function fieldHTML(k,label,type,v){
+  if(Array.isArray(v))v=v.join(', ');
+  if(type==='mode'){const m=(v==='spot')?'spot':'future';
+    return `<div class="field"><label>${label}</label><select id="f_${k}">
+      <option value="future" ${m==='future'?'selected':''}>Futures — long + short</option>
+      <option value="spot" ${m==='spot'?'selected':''}>Spot — long only, no leverage</option></select></div>`;}
+  if(type==='bool'){const on=(v===true||v==='true');
+    return `<div class="field"><label>${label}</label><select id="f_${k}">
+      <option value="true" ${on?'selected':''}>On</option><option value="false" ${!on?'selected':''}>Off</option></select></div>`;}
+  return `<div class="field"><label>${label}</label><input id="f_${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;
+}
+// Read saved config from Supabase and render the form from it. This runs on every
+// visit to Settings, so the form ALWAYS reflects what's actually stored & running.
+async function fillSettings(announce){
+  const {data,error}=await sb.from('bot_config').select('data,updated_at').eq('id',1).single();
+  const box=document.getElementById('settings');if(!box)return;
+  const st=document.getElementById('setStatus');
+  if(error){if(st)st.innerHTML='<span class="neg">could not load saved settings — check connection</span>';return;}
+  savedCfg=(data&&data.data)||{};
+  box.innerHTML=GROUPS.map(([title,fields])=>`
+    <div class="glass panel" style="margin-bottom:12px">
+      <div class="mut" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px">${title}</div>
+      <div class="form-grid">${fields.map(([k,label,type])=>{
+        let v=savedCfg[k]; if(v==null)v=DEFAULTS[k]; return fieldHTML(k,label,type,v);}).join('')}</div>
+    </div>`).join('');
+  const mode=(savedCfg.market_type||'future');
+  const npairs=Array.isArray(savedCfg.symbols)?savedCfg.symbols.length:(DEFAULTS.symbols.split(',').length);
+  const when=data&&data.updated_at?new Date(data.updated_at).toLocaleString():'—';
+  if(st)st.innerHTML=`showing <b style="color:var(--ink)">saved</b> settings · ${mode.toUpperCase()} · ${npairs} pairs · updated ${when}`;
+  if(announce){const m=document.getElementById('savedMsg');if(m){m.hidden=false;m.textContent='Reloaded the saved settings from the server.';setTimeout(()=>{if(m)m.hidden=true},3000);}}
+}
+async function saveSettings(){
+  // start from the current saved config so untouched keys are preserved exactly
+  const patch=Object.assign({},savedCfg);
   for(const [k,,type] of FIELDS){const el=document.getElementById('f_'+k);if(!el)continue;
+    if(type==='mode'){patch[k]=el.value==='spot'?'spot':'future';continue;}
     if(type==='bool'){patch[k]=el.value==='true';continue;}
     if(type==='number'){if(el.value.trim()==='')continue; patch[k]=Number(el.value);continue;}
     patch[k]=el.value;}
+  const m=document.getElementById('savedMsg');if(m){m.hidden=false;m.textContent='Saving…';}
   const {data}=await sb.from('bot_config').select('revision').eq('id',1).single();
   const rev=((data&&data.revision)||0)+1;
   const {error}=await sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',1);
-  const m=document.getElementById('savedMsg');m.hidden=false;
-  m.textContent=error?('Error: '+error.message):'Saved — Treo will pick these up shortly.';setTimeout(()=>{if(m)m.hidden=true},4000);}
+  if(error){if(m)m.innerHTML='<span class="neg">Save failed: '+error.message+'</span>';return;}
+  await fillSettings();        // re-read from server and re-render -> proves it stuck
+  if(m){m.hidden=false;m.innerHTML='<span class="pos">Saved ✓</span> — Treo applies these within seconds (Market mode needs a restart).';setTimeout(()=>{if(m)m.hidden=true},5000);}
+}
 async function setControl(w){await sb.from('bot_config').update({control:w,updated_at:new Date().toISOString()}).eq('id',1);}
-async function flatten(){ if(!confirm('Close ALL open positions now and pause the bot?'))return;
+async function flatten(){ if(!confirm('STOP the bot and CLOSE ALL open positions right now?'))return;
   await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',1); }
 
 function baseOpts(){return {responsive:true,maintainAspectRatio:false,animation:false,
