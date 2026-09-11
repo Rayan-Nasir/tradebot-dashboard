@@ -186,6 +186,38 @@ th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.
 canvas{max-width:100%}
 ::selection{background:rgba(60,224,255,.3);color:#fff}
 </style>
+<style>
+  /* two-engine additions */
+  .mode-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:rgba(10,16,26,.5)}
+  .mode-seg button{border:none;border-radius:0;background:transparent;padding:7px 15px;font-size:12px;font-weight:700;letter-spacing:.03em;box-shadow:none}
+  .mode-seg button:hover{transform:none;box-shadow:none;color:var(--glow)}
+  .mode-seg button.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b}
+  .engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:840px){.engine-grid{grid-template-columns:1fr}}
+  .eng{padding:18px;position:relative;transition:.25s}
+  .eng.off{opacity:.38;filter:grayscale(.5)}
+  .eng .ehead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .eng .ename{font-family:'Orbitron';font-weight:700;letter-spacing:2px;font-size:14px}
+  .orb{width:118px;height:118px;border-radius:50%;margin:6px auto 12px;display:grid;place-items:center;text-align:center;
+    background:radial-gradient(circle at 50% 40%,rgba(60,224,255,.34),rgba(8,18,34,.9) 70%);
+    box-shadow:0 0 34px rgba(60,224,255,.34) inset,0 0 20px rgba(60,224,255,.26);animation:breathe 3.6s ease-in-out infinite}
+  .orb.long{background:radial-gradient(circle at 50% 40%,rgba(38,230,164,.42),rgba(6,26,20,.92) 70%);box-shadow:0 0 42px rgba(38,230,164,.5) inset}
+  .orb.short{background:radial-gradient(circle at 50% 40%,rgba(255,93,114,.42),rgba(30,8,14,.92) 70%);box-shadow:0 0 42px rgba(255,93,114,.5) inset}
+  .orb.halt{background:radial-gradient(circle at 50% 40%,rgba(255,206,90,.3),rgba(30,24,8,.9) 70%)}
+  .orb .os{font-family:'Orbitron';font-weight:800;font-size:14px;letter-spacing:1px}
+  .orb .osub{font-size:10px;color:var(--ink-2);margin-top:3px}
+  .ekpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+  .ekpi .k{color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em}
+  .ekpi .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .modal-bg{position:fixed;inset:0;background:rgba(2,6,14,.74);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:100;padding:20px}
+  .modal{max-width:500px;width:100%;padding:24px}
+  .modal h3{margin:0 0 4px;font-size:17px}
+  .warn-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5}
+  .warn-item:last-child{border-bottom:none}
+  .warn-ic{color:var(--warn);flex:none;font-size:15px}
+  .colwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.colwrap{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
@@ -207,19 +239,17 @@ canvas{max-width:100%}
 <div id="app" hidden>
   <div class="appbar"><div class="inner row">
     <div class="brand"><span class="spark"></span><span class="mark">TREO</span></div>
-    <span id="mode" class="badge b-mode">—</span>
-    <span id="status" class="badge b-run">—</span>
-    <span id="statusNote" class="mut" style="font-size:12px"></span>
+    <span class="mode-seg" id="modeSeg"></span>
+    <span id="modeNote" class="mut" style="font-size:12px"></span>
     <span class="spacer"></span>
-    <button class="mini" onclick="setControl('run')">▶ Run</button>
-    <button class="mini" onclick="setControl('pause')">⏸ Pause</button>
-    <button class="mini danger" onclick="flatten()">■ Stop &amp; Close All</button>
+    <button class="mini danger" onclick="stopAll()">■ Stop &amp; Close All</button>
     <button class="mini ghost" onclick="signOut()">Exit</button>
   </div>
   <div class="inner" style="padding-top:0"><div class="tabs" id="tabs"></div></div></div>
-
   <div class="wrap"><div id="view"></div></div>
 </div>
+
+<div id="modalHost"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -228,59 +258,52 @@ canvas{max-width:100%}
 const cfg=window.APP_CONFIG;
 const sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
 const TABS=["Command","Trades","Markets","Settings"];
-let active="Command", S={}, T=[], pnlChart, wlChart;
-// Settings are grouped into sections for a cleaner form. [key,label,type]
-const GROUPS=[
-  ["Mode & market",[
-    ["market_type","Market mode","mode"],["symbols","Pairs (comma separated)","text"],
-    ["timeframe","Candle timeframe","text"],["poll_seconds","Check every (seconds)","number"],
-    ["leverage","Leverage (× — futures only)","number"],
-    ["allow_long","Allow longs","bool"],["allow_short","Allow shorts (futures only)","bool"],
-  ]],
-  ["Daily goals",[
-    ["daily_profit_target_usd","Daily profit target (USDT, 0=off)","number"],
-    ["daily_loss_limit_usd","Daily loss limit (USDT, 0=off)","number"],
-    ["daily_profit_target_pct","…or profit target (%)","number"],
-    ["daily_loss_limit_pct","…or loss limit (%)","number"],
-  ]],
-  ["Signal engine",[
-    ["score_threshold","Votes needed (2–4)","number"],["atr_mult","Stop = ATR ×","number"],
-    ["min_stop_pct","Min stop width (%)","number"],
-    ["trend_ema","Trend-context EMA (0=off)","number"],["adx_min","Min trend strength ADX (0=off)","number"],
-    ["rsi_overbought","RSI overbought","number"],["rsi_oversold","RSI oversold","number"],
-    ["ema_fast","EMA fast","number"],["ema_slow","EMA slow","number"],
-    ["rsi_period","RSI period","number"],["adx_period","ADX period","number"],["atr_period","ATR period","number"],
-  ]],
-  ["Support / resistance",[
-    ["use_sr","Only enter near a level (S/R gate)","bool"],
-    ["sr_lookback","Levels lookback (candles)","number"],
-    ["sr_pivot_bars","Pivot strength (bars each side)","number"],
-    ["sr_near_atr","“Near a level” = ATR ×","number"],
-    ["sr_min_room_r","Min room to opposite level (R)","number"],
-  ]],
-  ["Market sentiment",[
-    ["use_fng","Use Fear & Greed filter","bool"],["fng_extreme_greed","Block longs above F&G","number"],
-    ["fng_extreme_fear","Block shorts below F&G","number"],
-  ]],
-  ["Trade management",[
-    ["use_exchange_stop","Stop lives on exchange","bool"],["breakeven_at_r","Break-even at R (0=off)","number"],
-    ["trail_atr_mult","Trail stop = ATR × (0=off)","number"],["cooldown_minutes","Cooldown after loss (min)","number"],
-  ]],
-  ["Risk & size",[
-    ["risk_per_trade_pct","Risk per trade (%)","number"],["reward_risk","Reward : risk","number"],
-    ["max_open_positions","Max open positions","number"],
-    ["min_notional_usdt","Min trade size (USDT)","number"],["fee_pct","Fee per trade (%)","number"],
-  ]],
+const ROW={futures:1,spot:2};
+let active="Command";
+let E={futures:{S:{},C:{data:{},control:'run',revision:0}},spot:{S:{},C:{data:{},control:'run',revision:0}}};
+let T=[], pnlChart, wlChart, lastTLen=-1;
+
+const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'15m',poll_seconds:20,
+  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,min_stop_pct:0.6,trend_ema:200,adx_min:22,
+  use_sr:true,sr_lookback:120,sr_pivot_bars:3,sr_near_atr:1.5,sr_min_room_r:1.0,use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
+  rsi_overbought:78,rsi_oversold:22,use_stop_loss:true,use_exchange_stop:true,breakeven_at_r:1.5,trail_atr_mult:2.5,cooldown_minutes:15,
+  risk_per_trade_pct:1,reward_risk:2,max_open_positions:8,daily_loss_limit_pct:0,daily_profit_target_pct:0,
+  daily_profit_target_usd:0,daily_loss_limit_usd:0,ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,
+  min_notional_usdt:11,fee_pct:0.09};
+
+const LABELS={symbols:"Pairs (comma separated)",timeframe:"Candle timeframe",poll_seconds:"Check every (seconds)",
+  leverage:"Leverage (×)",allow_long:"Allow longs",allow_short:"Allow shorts",score_threshold:"Votes needed (2–4)",
+  atr_mult:"Target/stop = ATR ×",min_stop_pct:"Min width (%)",trend_ema:"Trend-context EMA (0=off)",adx_min:"Min trend strength ADX (0=off)",
+  rsi_overbought:"RSI overbought",rsi_oversold:"RSI oversold",use_sr:"Only enter near a level (S/R)",sr_lookback:"S/R lookback (candles)",
+  sr_pivot_bars:"S/R pivot strength",sr_near_atr:"“Near a level” = ATR ×",sr_min_room_r:"Min room to opposite level (R)",
+  use_fng:"Use Fear & Greed filter",fng_extreme_greed:"Block longs above F&G",fng_extreme_fear:"Block shorts below F&G",
+  use_stop_loss:"Use stop-loss",use_exchange_stop:"Stop lives on exchange",breakeven_at_r:"Break-even at R (0=off)",
+  trail_atr_mult:"Trail stop = ATR × (0=off)",cooldown_minutes:"Cooldown after loss (min)",risk_per_trade_pct:"Risk per trade (%)",
+  reward_risk:"Take-profit = risk ×",max_open_positions:"Max open positions",min_notional_usdt:"Min trade size (USDT)",
+  fee_pct:"Fee per trade (%)",daily_profit_target_usd:"Daily profit target (USDT, 0=off)",daily_loss_limit_usd:"Daily loss limit (USDT, 0=off)",
+  daily_profit_target_pct:"…or profit target (%)",daily_loss_limit_pct:"…or loss limit (%)",
+  ema_fast:"EMA fast",ema_slow:"EMA slow",rsi_period:"RSI period",adx_period:"ADX period",atr_period:"ATR period"};
+
+const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss","use_exchange_stop"]);
+
+// FUTURES settings — full control
+const FUT_GROUPS=[
+  ["Trading",["symbols","timeframe","poll_seconds","leverage","allow_long","allow_short"]],
+  ["Daily goals",["daily_profit_target_usd","daily_loss_limit_usd","daily_profit_target_pct","daily_loss_limit_pct"]],
+  ["Signal engine",["score_threshold","atr_mult","min_stop_pct","trend_ema","adx_min","rsi_overbought","rsi_oversold","ema_fast","ema_slow","rsi_period","adx_period","atr_period"]],
+  ["Support / resistance",["use_sr","sr_lookback","sr_pivot_bars","sr_near_atr","sr_min_room_r"]],
+  ["Market sentiment",["use_fng","fng_extreme_greed","fng_extreme_fear"]],
+  ["Trade management",["use_stop_loss","use_exchange_stop","breakeven_at_r","trail_atr_mult","cooldown_minutes"]],
+  ["Risk & size",["risk_per_trade_pct","reward_risk","max_open_positions","min_notional_usdt","fee_pct"]],
 ];
-const FIELDS=GROUPS.flatMap(g=>g[1]);   // flat list for save/coerce
-const DEFAULTS={market_type:'future',symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'5m',poll_seconds:10,
-  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,min_stop_pct:0.3,trend_ema:100,adx_min:18,
-  use_sr:true,sr_lookback:120,sr_pivot_bars:3,sr_near_atr:1.2,sr_min_room_r:1.0,
-  use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
-  rsi_overbought:78,rsi_oversold:22,use_exchange_stop:true,breakeven_at_r:1,trail_atr_mult:1.5,cooldown_minutes:10,
-  risk_per_trade_pct:1,reward_risk:1.5,max_open_positions:2,daily_loss_limit_pct:3,daily_profit_target_pct:4,
-  daily_profit_target_usd:0,daily_loss_limit_usd:0,
-  ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,min_notional_usdt:11,fee_pct:0.09};
+// SPOT settings — lean, long-only accumulator, no stop / leverage / short / daily-loss
+const SPOT_GROUPS=[
+  ["Trading",["symbols","timeframe","poll_seconds"]],
+  ["Buy the dip (entry)",["score_threshold","use_sr","sr_near_atr","sr_min_room_r","trend_ema","adx_min","rsi_oversold"]],
+  ["Take profit & size",["reward_risk","risk_per_trade_pct","max_open_positions","min_notional_usdt","cooldown_minutes","fee_pct"]],
+  ["Market sentiment",["use_fng","fng_extreme_greed"]],
+];
+
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
 
@@ -292,48 +315,62 @@ async function signOut(){await sb.auth.signOut();location.reload();}
 async function boot(){const {data:{session}}=await sb.auth.getSession(); session?showApp():(login.hidden=false);}
 sb.auth.onAuthStateChange((_e,s)=>{if(s)showApp();});
 
-let lastTLen=-1;
 async function showApp(){
   login.hidden=true; app.hidden=false;
   tabs.innerHTML=TABS.map(t=>`<div class="tab ${t===active?'active':''}" onclick="go('${t}')">${t}</div>`).join('');
-  await Promise.all([fetchState(),fetchTrades()]); build();
+  await Promise.all([fetchState(),fetchConfigs(),fetchTrades()]); build();
   sb.channel('rt')
     .on('postgres_changes',{event:'*',schema:'public',table:'bot_state'},async()=>{await fetchState();live();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'bot_config'},async()=>{await fetchConfigs();live();})
     .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async()=>{await fetchTrades();live();})
     .subscribe();
-  setInterval(async()=>{await fetchState();live();},5000);
+  setInterval(async()=>{await fetchState();await fetchConfigs();live();},5000);
 }
 function go(t){active=t;document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.textContent===t));build();}
-async function fetchState(){const {data}=await sb.from('bot_state').select('data').eq('id',1).single();S=(data&&data.data)||{};}
-async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(1000);T=data||[];lastTLen=T.length;}
 
-function staleSecs(){
-  // Prefer the unambiguous epoch stamp; it's timezone-proof.
-  if(typeof S.updated_ts==='number') return Math.max(0,Math.round(Date.now()/1000 - S.updated_ts));
-  if(!S.updated)return null;
-  // fallback: the server runs UTC and stamps a naive time, so read it AS UTC
-  const t=Date.parse(String(S.updated).replace(' ','T')+'Z');
+async function fetchState(){const {data}=await sb.from('bot_state').select('id,data').in('id',[1,2]);
+  (data||[]).forEach(r=>{E[r.id===2?'spot':'futures'].S=(r&&r.data)||{};});}
+async function fetchConfigs(){const {data}=await sb.from('bot_config').select('id,data,control,revision').in('id',[1,2]);
+  (data||[]).forEach(r=>{E[r.id===2?'spot':'futures'].C={data:r.data||{},control:r.control||'run',revision:r.revision||0};});}
+async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(2000);T=data||[];lastTLen=T.length;}
+
+function engRunning(e){const c=E[e].C.control;return c!=='pause'&&c!=='stop';}
+function currentMode(){const f=engRunning('futures'),s=engRunning('spot');
+  if(f&&s)return 'smart'; if(s)return 'spot'; if(f)return 'futures'; return 'paused';}
+function staleSecs(S){if(typeof S.updated_ts==='number')return Math.max(0,Math.round(Date.now()/1000-S.updated_ts));
+  if(!S.updated)return null;const t=Date.parse(String(S.updated).replace(' ','T')+'Z');
   if(isNaN(t))return null;return Math.max(0,Math.round((Date.now()-t)/1000));}
-function syncHeader(){
-  mode.textContent=(S.market_type?S.market_type.toUpperCase():'—')+(S.mode?(' · '+S.mode):'');
-  const note=document.getElementById('statusNote');
-  const s=staleSecs();
-  if(s!=null && s>90){   // no fresh scan for a while -> the bot may be down/restarting
-    status.className='badge b-off';status.innerHTML='<span class="statusdot dot-halt"></span>OFFLINE?';
-    if(note)note.innerHTML=`no update for ${s>120?Math.round(s/60)+'m':s+'s'} — bot may be restarting or stopped`;
-    return;
-  }
-  let cls,txt,dot,msg;
-  const reconnecting=/reconnect/i.test(S.halt_reason||'');
-  if(S.control==='pause'||S.control==='stop'){cls='b-pause';txt='PAUSED';dot='dot-pause';msg='holding — not opening new trades';}
-  else if(reconnecting){cls='b-halt';txt='RECONNECTING';dot='dot-halt';msg=S.halt_reason||'';}
-  else if(S.halted){cls='b-halt';txt='RESTING';dot='dot-halt';msg=S.halt_reason||'daily goal reached';}
-  else{cls='b-run';txt='RUNNING';dot='dot-run';msg='scanning & trading';}
-  status.className='badge '+cls;
-  status.innerHTML=`<span class="statusdot ${dot}"></span>${txt}`;
-  if(note)note.innerHTML=msg;
+
+// engine status -> {txt, dot, cls, orb, sub}
+function engStatus(e){const S=E[e].S, on=engRunning(e), st=staleSecs(S);
+  if(st!=null&&st>120) return {txt:'OFFLINE?',dot:'dot-halt',cls:'b-off',orb:'halt',sub:'no data'};
+  if(!on) return {txt:'IDLE',dot:'dot-pause',cls:'b-pause',orb:'halt',sub:'not selected'};
+  if(S.halted) return {txt:'RESTING',dot:'dot-halt',cls:'b-halt',orb:'halt',sub:S.halt_reason||'daily goal'};
+  const sig=S.signals||{}, hot=Object.keys(sig).find(k=>sig[k].signal);
+  if(hot){const d=sig[hot].signal;return {txt:d.toUpperCase(),dot:'dot-run',cls:'b-run',orb:d,sub:hot};}
+  return {txt:'SCANNING',dot:'dot-run',cls:'b-run',orb:'',sub:(Object.keys(sig).length||'')+' markets'};
 }
-// FULL build of the active tab (on tab switch / first load)
+
+function syncHeader(){
+  const m=currentMode();
+  modeSeg.innerHTML=[['spot','Spot'],['futures','Futures'],['smart','Smart']].map(([k,l])=>
+    `<button class="${m===k?'on':''}" onclick="setMode('${k}')">${l}</button>`).join('');
+  const note=document.getElementById('modeNote');
+  const desc={spot:'spot only · long-only accumulator',futures:'futures only · long + short',
+    smart:'both engines live',paused:'both engines paused'}[m];
+  if(note)note.textContent=desc;
+}
+
+async function setMode(m){
+  const set=(id,ctrl)=>sb.from('bot_config').update({control:ctrl,updated_at:new Date().toISOString()}).eq('id',id);
+  await set(ROW.futures,(m==='futures'||m==='smart')?'run':'pause');
+  await set(ROW.spot,(m==='spot'||m==='smart')?'run':'pause');
+  await fetchConfigs(); build();
+}
+async function stopAll(){ if(!confirm('STOP both engines and CLOSE every open position now?'))return;
+  await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',ROW.futures);
+  await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',ROW.spot);}
+
 function build(){
   syncHeader();
   view.innerHTML=({Command:vCommand,Trades:vTrades,Markets:vMarkets,Settings:vSettings}[active])();
@@ -342,97 +379,69 @@ function build(){
   if(active==='Markets')syncMarkets();
   if(active==='Settings')fillSettings();
 }
-// LIGHT update on live data — never disturbs the Settings form or the reactor DOM
 function live(){
   syncHeader();
-  if(active==='Settings') return;                 // leave the form alone while editing
-  if(active==='Command'){ syncCommand(); return; }// update readouts, reactor keeps spinning
-  if(active==='Markets'){ syncMarkets(); return; }
-  if(active==='Trades'){ if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();} syncTrades(); }
+  if(active==='Settings')return;
+  if(active==='Command'){syncCommand();return;}
+  if(active==='Markets'){syncMarkets();return;}
+  if(active==='Trades'){if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();}syncTrades();}
 }
 
-// headline: what is Treo noticing?
-function headline(){
-  const sig=S.signals||{}, keys=Object.keys(sig);
-  const hotK=keys.find(k=>sig[k].signal);
-  const st=staleSecs();
-  if(st!=null&&st>90) return {state:'OFFLINE',cls:'halt',sub:'no signal',
-    note:'No update from the bot for a while — it may be restarting or stopped.'};
-  if(S.halted) return {state:'RESTING',cls:'halt',sub:'daily goal',note:S.halt_reason||'daily goal reached — resting till tomorrow'};
-  if(S.control==='pause'||S.control==='stop') return {state:'PAUSED',cls:'halt',sub:'holding',note:'Paused — not opening new trades'};
-  if(hotK){const dir=sig[hotK].signal;
-    return {state:dir.toUpperCase(),cls:dir,sub:hotK,
-      note:`<b>${hotK}</b> — confluence aligned, entering <b>${dir}</b>`};}
-  // closest to a signal (highest single-side score)
-  let best=null,bc=-1,bd='';
-  keys.forEach(k=>{const s=sig[k].score||{long:0,short:0};const m=Math.max(s.long,s.short);
-    if(m>bc){bc=m;best=k;bd=s.long>=s.short?'long':'short';}});
-  const sub=keys.length?`${keys.length} markets`:'connecting';
-  const note=best!=null?`Closest: <b>${best}</b> — ${bc}/4 ${bd} votes`:'Scanning the markets…';
-  return {state:'SCANNING',cls:'',sub,note};
-}
-
-// Static skeleton — the reactor rings live here and are NEVER rebuilt on refresh,
-// so their CSS animation keeps spinning continuously.
-function vCommand(){
-  return `<div class="hud">
-    <div class="reactor">
-      <div class="ring r-tick"></div><div class="ring r-sweep"></div><div class="ring r-sweep rev"></div>
-      <div class="ring r-inner"></div>
-      <div class="core" id="coreEl"><div><div class="core-state" id="coreState">—</div>
-        <div class="core-sub" id="coreSub"></div></div></div>
+function engPanel(e){const label=e.toUpperCase()+' ENGINE';
+  return `<div class="glass eng" id="eng_${e}">
+    <div class="ehead"><span class="ename">${label}</span><span class="badge" id="eb_${e}">—</span></div>
+    <div class="orb" id="orb_${e}"><div><div class="os" id="os_${e}">—</div><div class="osub" id="osub_${e}"></div></div></div>
+    <div class="ekpi">
+      <div><div class="k">Balance</div><div class="v" id="ebal_${e}">—</div></div>
+      <div><div class="k">Today</div><div class="v" id="epnl_${e}">—</div></div>
+      <div><div class="k">Open</div><div class="v" id="eopen_${e}">—</div></div>
     </div>
-    <div class="notice" id="notice"></div>
-    <div class="sats" id="sats"></div>
-    <div id="tickerBox"></div>
-  </div>
-  <div class="cards" id="kpis" style="margin-top:20px"></div>
-  <p class="mut" id="cmdfoot" style="margin-top:12px;font-size:12px"></p>`;
+    <div class="sats" id="esats_${e}" style="margin-top:14px"></div>
+    <p class="mut" id="efoot_${e}" style="font-size:11px;margin:12px 0 0"></p>
+  </div>`;
 }
-// Update only the readouts in place; the reactor DOM is untouched.
+function vCommand(){
+  return `<div class="cards" id="combo" style="margin:22px 0 6px"></div>
+    <h2>Engines</h2>
+    <div class="engine-grid">${engPanel('spot')}${engPanel('futures')}</div>`;
+}
+function money(n){const v=+n||0;return (v>=0?'+$':'−$')+Math.abs(v).toFixed(2);}
+function syncEngine(e){
+  const S=E[e].S, el=id=>document.getElementById(id); if(!el('orb_'+e))return;
+  const stt=engStatus(e), on=engRunning(e);
+  el('eng_'+e).className='glass eng'+(on?'':' off');
+  el('eb_'+e).className='badge '+stt.cls; el('eb_'+e).innerHTML=`<span class="statusdot ${stt.dot}"></span>${stt.txt}`;
+  el('orb_'+e).className='orb '+stt.orb; el('os_'+e).textContent=stt.txt; el('osub_'+e).textContent=stt.sub;
+  const usd=S.day_pnl_usd||0, pct=S.day_pnl_pct||0, uc=usd>=0?'pos':'neg';
+  el('ebal_'+e).textContent=(S.balance||0).toFixed(0);
+  el('epnl_'+e).innerHTML=`<span class="${uc}">${money(usd)}</span>`;
+  el('eopen_'+e).textContent=(S.open_count||0)+' / '+(S.max_positions??'—');
+  const sig=S.signals||{};
+  el('esats_'+e).innerHTML=Object.keys(sig).slice(0,6).map(s=>{const o=sig[s],sc=o.score||{long:0,short:0};
+    const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const mx=Math.max(sc.long,sc.short);
+    const tag=lean==='—'?'<span class="mut" style="font-size:10px">flat</span>':`<span class="tag ${lean}">${lean==='long'?'▲':'▼'} ${mx}/4</span>`;
+    return `<div class="sat"><div class="s">${s.replace('/USDT','')}</div><div class="p">${fmt(o.price)}</div><div style="margin-top:6px">${tag}</div></div>`;
+  }).join('')||'<span class="mut" style="font-size:12px">connecting…</span>';
+  const tf=S.timeframe||'—', dir=(e==='spot')?'long-only':'long+short';
+  el('efoot_'+e).textContent=`${dir} · every ${S.poll_seconds||'—'}s on ${tf} · ${S.win_rate!=null?S.win_rate+'% win':''} · last scan ${staleSecs(S)!=null?staleSecs(S)+'s ago':'—'}`;
+}
 function syncCommand(){
-  const el=id=>document.getElementById(id);
-  if(!el('coreEl')) return;
-  const h=headline(), sig=S.signals||{}, pnl=S.day_pnl_pct||0, c=pnl>=0?'pos':'neg';
-  el('coreEl').className='core '+h.cls;
-  el('coreState').textContent=h.state;
-  el('coreSub').textContent=h.sub;
-  el('notice').innerHTML=h.note;
-  el('sats').innerHTML=Object.keys(sig).map(s=>{const o=sig[s];const sc=o.score||{long:0,short:0};
-    const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const m=Math.max(sc.long,sc.short);
-    const tag=lean==='—'?'<span class="mut" style="font-size:11px">flat</span>':
-      `<span class="tag ${lean}">${lean==='long'?'▲ LONG':'▼ SHORT'} ${m}/4</span>`;
-    return `<div class="sat ${o.signal||''}"><div class="s">${s.replace('/USDT','')}</div>
-      <div class="p">${fmt(o.price)}</div><div style="margin-top:7px">${tag}</div></div>`;}).join('')
-    ||'<span class="mut">connecting…</span>';
-  const last=(S.activity||[]).slice().reverse().find(a=>a.kind==='trade')||(S.activity||[]).slice(-1)[0];
-  el('tickerBox').innerHTML=last?`<div class="ticker"><span class="fdot"></span>
-    <span class="mono">${(last.t||'').slice(11)}</span><span>${last.symbol||''} — ${last.text||''}</span></div>`:'';
-  const usd=S.day_pnl_usd||0, uc=usd>=0?'pos':'neg';
-  const usdStr=`${usd>=0?'+$':'−$'}${Math.abs(usd).toFixed(2)}`;
-  // daily goal progress card (USD goal wins; else % goal; else omit)
-  let goalCard='';
-  if((S.profit_target_usd||0)>0){const t=S.profit_target_usd;const pctToGoal=Math.max(0,Math.min(100,usd/t*100));
-    goalCard=card('Daily goal',`<span class="${uc}">${usdStr}</span> <span class="mut" style="font-size:13px">/ +$${(+t).toFixed(0)}</span>`+
-      `<div style="height:5px;border-radius:4px;background:rgba(120,150,190,.2);margin-top:7px;overflow:hidden"><div style="height:100%;width:${pctToGoal}%;background:var(--good)"></div></div>`);
-  }else if((S.profit_target_pct||0)>0){
-    goalCard=card('Daily goal',`<span class="${c}">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span> <span class="mut" style="font-size:13px">/ +${S.profit_target_pct}%</span>`);
-  }
-  el('kpis').innerHTML =
-    card('Balance (USDT)',(S.balance||0).toFixed(2))+
-    card('Today P&L',`<span class="${uc}">${usdStr}</span> <span class="mut" style="font-size:13px">(${pnl>=0?'+':''}${pnl.toFixed(2)}%)</span>`)+
-    goalCard+
-    card('Open',(S.open_count||0)+' / '+(S.max_positions??'—'))+
-    card('Win rate',S.win_rate!=null?S.win_rate+'%':'—')+
-    card('Scans',S.cycles||0);
-  const fng=(S.fng!=null)?` · F&G ${S.fng} ${S.fng_label||''}`:'';
-  const dir=S.allow_short?'long+short':'long only';
-  const lev=(S.market_type==='spot')?'spot':`${S.leverage||1}×`;
-  el('cmdfoot').textContent=`${(S.market_type||'futures')} · ${lev} · ${dir}${fng} · `+
-    `watching ${Object.keys(sig).length} markets · every ${S.poll_seconds||'—'}s on ${S.timeframe||'—'} · ${ago()}`;
+  const combo=document.getElementById('combo'); if(!combo)return;
+  const bal=(E.spot.S.balance||0)+(E.futures.S.balance||0);
+  const usd=(E.spot.S.day_pnl_usd||0)+(E.futures.S.day_pnl_usd||0);
+  const openN=(E.spot.S.open_count||0)+(E.futures.S.open_count||0);
+  const m=currentMode();
+  combo.innerHTML=card('Combined balance','$'+bal.toFixed(2))+
+    card('Combined today',`<span class="${usd>=0?'pos':'neg'}">${money(usd)}</span>`)+
+    card('Open positions',openN)+
+    card('Mode',`<span style="font-size:16px">${m.toUpperCase()}</span>`)+
+    card('Closed trades',T.length);
+  syncEngine('spot'); syncEngine('futures');
 }
 
-function vTrades(){   // skeleton — charts persist, data fills via syncTrades
+// ---------- TRADES (combined, engine-filterable) ----------
+let tf_res='all', tf_eng='all';
+function vTrades(){
   return `<h2>Open now</h2><div id="topen"></div>
     <h2>Performance</h2>
     <div class="charts">
@@ -443,165 +452,183 @@ function vTrades(){   // skeleton — charts persist, data fills via syncTrades
     <h2>Breakdown — what's actually working</h2><div id="tbreak"></div>
     <h2>Closed trades</h2>
     <div class="filterbar">
-      <button class="mini ${tf==='all'?'on':''}" onclick="setTf('all')">All</button>
-      <button class="mini ${tf==='wins'?'on':''}" onclick="setTf('wins')">Wins</button>
-      <button class="mini ${tf==='losses'?'on':''}" onclick="setTf('losses')">Losses</button></div>
+      <button class="mini ${tf_eng==='all'?'on':''}" onclick="setEng('all')">All engines</button>
+      <button class="mini ${tf_eng==='spot'?'on':''}" onclick="setEng('spot')">Spot</button>
+      <button class="mini ${tf_eng==='futures'?'on':''}" onclick="setEng('futures')">Futures</button>
+      <span style="width:14px"></span>
+      <button class="mini ${tf_res==='all'?'on':''}" onclick="setRes('all')">All</button>
+      <button class="mini ${tf_res==='wins'?'on':''}" onclick="setRes('wins')">Wins</button>
+      <button class="mini ${tf_res==='losses'?'on':''}" onclick="setRes('losses')">Losses</button></div>
     <div class="glass panel tblwrap" id="thist"></div>`;
 }
-let tf='all'; function setTf(f){tf=f;syncTrades();document.querySelectorAll('.filterbar .mini').forEach(b=>b.classList.toggle('on',b.textContent.toLowerCase()===f));}
+function setEng(f){tf_eng=f;build();}
+function setRes(f){tf_res=f;build();}
+function trByEng(){return tf_eng==='all'?T:T.filter(x=>(x.engine||'futures')===tf_eng);}
 function grp(list,keyfn){const m={};list.forEach(x=>{const k=keyfn(x);if(k==null)return;(m[k]=m[k]||[]).push(+x.pnl_pct);});
   return Object.entries(m).map(([k,v])=>({k,n:v.length,w:v.filter(p=>p>0).length,net:v.reduce((a,b)=>a+b,0)})).sort((a,b)=>b.net-a.net);}
-function btable(title,arr){ if(!arr.length)return '';
+function btable(title,arr){if(!arr.length)return '';
   return `<div class="glass panel" style="margin-bottom:12px"><strong style="font-size:13px">${title}</strong>
    <table style="margin-top:6px"><tr><th>${title}</th><th>Trades</th><th>Win%</th><th>Net</th></tr>`+
    arr.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.w/r.n*100)}%</td>
      <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
 function syncTrades(){
   const el=id=>document.getElementById(id); if(!el('tstats'))return;
-  // open positions (live) — so you can see what Treo is holding right now
-  const p=S.positions||{}; const pk=Object.keys(p);
-  el('topen').innerHTML = pk.length? `<div class="glass panel tblwrap"><table>
-    <tr><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>`+
-    pk.map(s=>{const o=p[s];const side=o.side||'long';const u=o.unreal_pct||0;const c=u>=0?'pos':'neg';
-      return `<tr><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
-        <td>${fmt(o.entry)}</td><td>${fmt(o.stop)}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
-        <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td></tr>`;}).join('')+`</table></div>`
-    : '<p class="mut" style="padding:8px">No open positions right now — Treo opens one when a setup clears the vote threshold.</p>';
-  // stats
-  const wins=T.filter(x=>+x.pnl_pct>0),losses=T.filter(x=>+x.pnl_pct<=0);
+  // open positions from both engines
+  let openRows='';
+  ['spot','futures'].forEach(e=>{const p=E[e].S.positions||{};Object.keys(p).forEach(s=>{const o=p[s];const side=o.side||'long';
+    const u=o.unreal_pct||0;const c=u>=0?'pos':'neg';
+    openRows+=`<tr><td><span class="chip">${e}</span></td><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
+      <td>${fmt(o.entry)}</td><td>${o.stop?fmt(o.stop):'—'}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
+      <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td></tr>`;});});
+  el('topen').innerHTML=openRows?`<div class="glass panel tblwrap"><table>
+    <tr><th>Engine</th><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
+    :'<p class="mut" style="padding:8px">No open positions right now.</p>';
+  const D=trByEng();
+  const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
   const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
-  const net=T.reduce((s,x)=>s+ +x.pnl_pct,0);
-  el('tstats').innerHTML=card('Total',T.length)+card('Win rate',T.length?Math.round(wins.length/T.length*100)+'%':'—')+
-    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+
-    card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
+  const net=D.reduce((s,x)=>s+ +x.pnl_pct,0);
+  el('tstats').innerHTML=card('Total',D.length)+card('Win rate',D.length?Math.round(wins.length/D.length*100)+'%':'—')+
+    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
     card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
-  // breakdown — which side / pair / signal-strength is actually winning
-  el('tbreak').innerHTML = T.length ? (
-    btable('Side',            grp(T,x=>(x.result||'').split(' ')[0]||null)) +
-    btable('Pair',            grp(T,x=>x.symbol)) +
-    btable('Signal strength', grp(T,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
-  ) : '<p class="mut" style="padding:8px">Breakdown appears once trades close.</p>';
-  // closed history
-  let rows=T.slice().reverse();
-  if(tf==='wins')rows=rows.filter(x=>+x.pnl_pct>0); if(tf==='losses')rows=rows.filter(x=>+x.pnl_pct<=0);
-  el('thist').innerHTML=rows.length?`<table><tr><th>Time</th><th>Pair</th><th>Entry</th><th>Exit</th><th>Result</th><th>P&L</th><th>Why</th></tr>`+
-    rows.map(x=>{const c=+x.pnl_pct>=0?'pos':'neg';return `<tr><td class="mut">${x.ts||''}</td><td>${x.symbol}</td>
+  el('tbreak').innerHTML=D.length?(
+    btable('Engine',grp(D,x=>x.engine||'futures'))+btable('Side',grp(D,x=>(x.result||'').split(' ')[0]||null))+
+    btable('Pair',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
+  ):'<p class="mut" style="padding:8px">Breakdown appears once trades close.</p>';
+  let rows=D.slice().reverse();
+  if(tf_res==='wins')rows=rows.filter(x=>+x.pnl_pct>0); if(tf_res==='losses')rows=rows.filter(x=>+x.pnl_pct<=0);
+  el('thist').innerHTML=rows.length?`<table><tr><th>Time</th><th>Eng</th><th>Pair</th><th>Entry</th><th>Exit</th><th>Result</th><th>P&L</th><th>Why</th></tr>`+
+    rows.map(x=>{const c=+x.pnl_pct>=0?'pos':'neg';return `<tr><td class="mut">${x.ts||''}</td><td><span class="chip">${x.engine||'fut'}</span></td><td>${x.symbol}</td>
       <td>${fmt(x.entry)}</td><td>${fmt(x.exit)}</td><td>${x.result}</td>
       <td class="${c}">${+x.pnl_pct>=0?'+':''}${(+x.pnl_pct).toFixed(2)}%</td><td class="mut">${x.reason||''}</td></tr>`;}).join('')+`</table>`
-    : '<p class="mut" style="padding:8px">No <b>closed</b> trades yet. A trade appears here only once it hits its stop or target — check "Open now" above for live positions.</p>';
+    :'<p class="mut" style="padding:8px">No closed trades yet for this filter.</p>';
 }
-
-function vMarkets(){ return `<h2>Markets</h2><div id="marketsBox"></div>`; }
-function syncMarkets(){
-  const box=document.getElementById('marketsBox'); if(!box)return;
-  const sig=S.signals||{};
-  const rows=Object.keys(sig).map(s=>{const o=sig[s],ind=o.indicators||{},sc=o.score||{long:0,short:0};
-    const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const m=Math.max(sc.long,sc.short);
-    const bias=lean==='—'?'<span class="mut">flat</span>':`<span class="${lean==='long'?'pos':'neg'}">${lean==='long'?'▲':'▼'} ${lean} ${m}/4</span>`;
-    const adx=ind.adx!=null?ind.adx:null; const adxc=adx!=null?(adx>=18?'pos':'mut'):'mut';
-    const read=o.signal?`<span class="${o.signal==='long'?'pos':'neg'}"><b>${o.signal.toUpperCase()}</b></span>`:`<span class="mut">${o.reason||''}</span>`;
-    return `<tr><td><b>${s}</b></td><td>${fmt(o.price)}</td>
-      <td class="${ind.trend==='up'?'pos':'neg'}">${ind.trend==='up'?'▲ up':(ind.trend==='down'?'▽ down':'—')}</td>
-      <td>${o.rsi!=null?o.rsi:'—'}</td><td class="${adxc}">${adx!=null?adx:'—'}</td>
-      <td class="mut">${ind.context||'—'}</td><td>${bias}</td><td>${read}</td></tr>`;}).join('')
-    ||'<tr><td class="mut" colspan="8">Waiting for data…</td></tr>';
-  box.innerHTML=`<div class="glass panel tblwrap"><table>
-    <tr><th>Pair</th><th>Price</th><th>Trend</th><th>RSI</th><th>ADX</th><th>Context</th><th>Bias (votes)</th><th>Read</th></tr>${rows}</table></div>
-    <h2>Recent activity</h2><div class="glass feed mono">${
-      (S.activity||[]).slice().reverse().slice(0,30).map(a=>`<div class="frow"><span class="ftime">${(a.t||'').slice(11)}</span>
-        <span class="fsym">${a.symbol||''}</span><span class="ftxt">${a.text||''}</span></div>`).join('')||'<p class="mut" style="padding:8px">No activity yet.</p>'}</div>`;
-}
-
-let savedCfg={};   // the last config we READ back from the server (source of truth)
-function vSettings(){
-  return `<h2>Settings <span class="mut" style="text-transform:none;letter-spacing:0">— change here, Treo applies within seconds</span></h2>
-    <div class="glass panel" style="margin-bottom:14px">
-      <div class="row"><button class="primary" onclick="saveSettings()">Save changes</button>
-        <button class="mini" onclick="fillSettings(true)">Reload saved</button>
-        <span class="spacer"></span>
-        <span id="setStatus" class="mut" style="font-size:12px">loading…</span></div>
-      <div class="saved" id="savedMsg" hidden style="margin-top:8px"></div></div>
-    <div id="settings"></div>
-    <p class="hint">Your saved values load here every time — change what you want and hit <b>Save changes</b>. Switching Market mode (Futures ↔ Spot) applies after the bot restarts. More trades ≠ more profit — each pays fees.</p>`;
-}
-function fieldHTML(k,label,type,v){
-  if(Array.isArray(v))v=v.join(', ');
-  if(type==='mode'){const m=(v==='spot')?'spot':'future';
-    return `<div class="field"><label>${label}</label><select id="f_${k}">
-      <option value="future" ${m==='future'?'selected':''}>Futures — long + short</option>
-      <option value="spot" ${m==='spot'?'selected':''}>Spot — long only, no leverage</option></select></div>`;}
-  if(type==='bool'){const on=(v===true||v==='true');
-    return `<div class="field"><label>${label}</label><select id="f_${k}">
-      <option value="true" ${on?'selected':''}>On</option><option value="false" ${!on?'selected':''}>Off</option></select></div>`;}
-  return `<div class="field"><label>${label}</label><input id="f_${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;
-}
-// Read saved config from Supabase and render the form from it. This runs on every
-// visit to Settings, so the form ALWAYS reflects what's actually stored & running.
-async function fillSettings(announce){
-  const {data,error}=await sb.from('bot_config').select('data,updated_at').eq('id',1).single();
-  const box=document.getElementById('settings');if(!box)return;
-  const st=document.getElementById('setStatus');
-  if(error){if(st)st.innerHTML='<span class="neg">could not load saved settings — check connection</span>';return;}
-  savedCfg=(data&&data.data)||{};
-  box.innerHTML=GROUPS.map(([title,fields])=>`
-    <div class="glass panel" style="margin-bottom:12px">
-      <div class="mut" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px">${title}</div>
-      <div class="form-grid">${fields.map(([k,label,type])=>{
-        let v=savedCfg[k]; if(v==null)v=DEFAULTS[k]; return fieldHTML(k,label,type,v);}).join('')}</div>
-    </div>`).join('');
-  const mode=(savedCfg.market_type||'future');
-  const symv=savedCfg.symbols!=null?savedCfg.symbols:DEFAULTS.symbols;
-  const npairs=Array.isArray(symv)?symv.length:String(symv).split(',').filter(x=>x.trim()).length;
-  const when=data&&data.updated_at?new Date(data.updated_at).toLocaleString():'—';
-  if(st)st.innerHTML=`showing <b style="color:var(--ink)">saved</b> settings · ${mode.toUpperCase()} · ${npairs} pairs · updated ${when}`;
-  if(announce){const m=document.getElementById('savedMsg');if(m){m.hidden=false;m.textContent='Reloaded the saved settings from the server.';setTimeout(()=>{if(m)m.hidden=true},3000);}}
-}
-async function saveSettings(){
-  // start from the current saved config so untouched keys are preserved exactly
-  const patch=Object.assign({},savedCfg);
-  for(const [k,,type] of FIELDS){const el=document.getElementById('f_'+k);if(!el)continue;
-    if(type==='mode'){patch[k]=el.value==='spot'?'spot':'future';continue;}
-    if(type==='bool'){patch[k]=el.value==='true';continue;}
-    if(type==='number'){if(el.value.trim()==='')continue; patch[k]=Number(el.value);continue;}
-    patch[k]=el.value;}
-  const m=document.getElementById('savedMsg');if(m){m.hidden=false;m.textContent='Saving…';}
-  const {data}=await sb.from('bot_config').select('revision').eq('id',1).single();
-  const rev=((data&&data.revision)||0)+1;
-  const {error}=await sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',1);
-  if(error){if(m)m.innerHTML='<span class="neg">Save failed: '+error.message+'</span>';return;}
-  await fillSettings();        // re-read from server and re-render -> proves it stuck
-  if(m){m.hidden=false;m.innerHTML='<span class="pos">Saved ✓</span> — Treo applies these within seconds (Market mode needs a restart).';setTimeout(()=>{if(m)m.hidden=true},5000);}
-}
-async function setControl(w){await sb.from('bot_config').update({control:w,updated_at:new Date().toISOString()}).eq('id',1);}
-async function flatten(){ if(!confirm('STOP the bot and CLOSE ALL open positions right now?'))return;
-  await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',1); }
-
 function baseOpts(){return {responsive:true,maintainAspectRatio:false,animation:false,
-  plugins:{legend:{display:false},tooltip:{backgroundColor:'#0e1626',titleColor:css('--ink'),bodyColor:css('--ink-2'),borderColor:css('--line-2'),borderWidth:1}},
-  scales:{x:{grid:{color:css('--line')},ticks:{color:css('--muted'),maxTicksLimit:8},border:{color:css('--line-2')}},
-          y:{grid:{color:css('--line')},ticks:{color:css('--muted')},border:{color:css('--line-2')}}}};}
-function drawPnl(){const ctx=document.getElementById('pnlChart');if(!ctx)return;
-  let cum=0;const labels=[],vals=[];T.forEach((x,i)=>{cum+=+x.pnl_pct||0;labels.push(i+1);vals.push(+cum.toFixed(2));});
-  const line=css('--series-1');if(pnlChart)pnlChart.destroy();
-  pnlChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:vals,borderColor:line,borderWidth:2,pointRadius:0,
-    pointHoverRadius:4,tension:.25,fill:true,backgroundColor:'rgba(74,168,255,.12)'}]},
-    options:{...baseOpts(),interaction:{mode:'index',intersect:false}}});}
-function drawWL(){const ctx=document.getElementById('wlChart');if(!ctx)return;
-  const wins=T.filter(x=>+x.pnl_pct>0).length,losses=T.length-wins;
-  const note=document.getElementById('wlNote');if(note)note.textContent=T.length?`${wins} wins · ${losses} losses`:'No trades yet';
+  plugins:{legend:{display:false}},scales:{x:{grid:{color:css('--line')},ticks:{color:css('--muted'),maxTicksLimit:8}},
+  y:{grid:{color:css('--line')},ticks:{color:css('--muted')}}}};}
+function drawPnl(){const ctx=document.getElementById('pnlChart');if(!ctx)return;const D=trByEng();
+  let cum=0;const labels=[],vals=[];D.forEach((x,i)=>{cum+=+x.pnl_pct||0;labels.push(i+1);vals.push(+cum.toFixed(2));});
+  if(pnlChart)pnlChart.destroy();
+  pnlChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:vals,borderColor:css('--series-1'),borderWidth:2,pointRadius:0,tension:.25,fill:true,backgroundColor:'rgba(74,168,255,.12)'}]},options:baseOpts()});}
+function drawWL(){const ctx=document.getElementById('wlChart');if(!ctx)return;const D=trByEng();
+  const wins=D.filter(x=>+x.pnl_pct>0).length,losses=D.length-wins;
+  const note=document.getElementById('wlNote');if(note)note.textContent=D.length?`${wins} wins · ${losses} losses`:'No trades yet';
   if(wlChart)wlChart.destroy();
-  wlChart=new Chart(ctx,{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[wins,losses],
-    backgroundColor:[css('--good'),css('--bad')],borderColor:'#0a0e17',borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,
-      plugins:{legend:{position:'bottom',labels:{color:css('--ink-2'),boxWidth:12,padding:14}},
-        tooltip:{backgroundColor:'#0e1626',titleColor:css('--ink'),bodyColor:css('--ink-2'),borderColor:css('--line-2'),borderWidth:1}}}});}
+  wlChart=new Chart(ctx,{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[wins,losses],backgroundColor:[css('--good'),css('--bad')],borderColor:'#0a0e17',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,plugins:{legend:{position:'bottom',labels:{color:css('--ink-2'),boxWidth:12,padding:14}}}}});}
+
+// ---------- MARKETS (per engine) ----------
+function vMarkets(){return `<div id="marketsBox"></div>`;}
+function mktTable(e){const S=E[e].S,sig=S.signals||{};
+  const rows=Object.keys(sig).map(s=>{const o=sig[s],ind=o.indicators||{},sc=o.score||{long:0,short:0};
+    const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const mx=Math.max(sc.long,sc.short);
+    const bias=lean==='—'?'<span class="mut">flat</span>':`<span class="${lean==='long'?'pos':'neg'}">${lean==='long'?'▲':'▼'} ${lean} ${mx}/4</span>`;
+    const read=o.signal?`<span class="${o.signal==='long'?'pos':'neg'}"><b>${o.signal.toUpperCase()}</b></span>`:`<span class="mut">${o.reason||''}</span>`;
+    return `<tr><td><b>${s}</b></td><td>${fmt(o.price)}</td><td>${o.rsi!=null?o.rsi:'—'}</td>
+      <td class="mut">${ind.support?fmt(ind.support):'—'} / ${ind.resistance?fmt(ind.resistance):'—'}</td><td>${bias}</td><td>${read}</td></tr>`;}).join('')
+    ||'<tr><td class="mut" colspan="6">Waiting for data…</td></tr>';
+  return `<h2>${e.toUpperCase()} — markets</h2><div class="glass panel tblwrap"><table>
+    <tr><th>Pair</th><th>Price</th><th>RSI</th><th>Support / Resist.</th><th>Bias</th><th>Read</th></tr>${rows}</table></div>`;
+}
+function syncMarkets(){const box=document.getElementById('marketsBox');if(!box)return;
+  box.innerHTML=mktTable('spot')+mktTable('futures');}
+
+// ---------- SETTINGS (separate per engine + smart target + risk modal) ----------
+function fieldHTML(k,v){const label=LABELS[k]||k; if(Array.isArray(v))v=v.join(', ');
+  if(BOOL.has(k)){const on=(v===true||v==='true');
+    return `<div class="field"><label>${label}</label><select data-k="${k}">
+      <option value="true" ${on?'selected':''}>On</option><option value="false" ${!on?'selected':''}>Off</option></select></div>`;}
+  const type=(typeof v==='number'||!isNaN(parseFloat(v)))&&k!=='symbols'&&k!=='timeframe'?'number':'text';
+  return `<div class="field"><label>${label}</label><input data-k="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;
+}
+function engineSettingsBlock(e,groups){const cfg=E[e].C.data||{};
+  const inner=groups.map(([title,keys])=>`
+    <div style="margin-bottom:12px"><div class="mut" style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:10px 0 8px">${title}</div>
+      <div class="form-grid">${keys.map(k=>{let v=cfg[k];if(v==null)v=DEFAULTS[k];return fieldHTML(k,v);}).join('')}</div></div>`).join('');
+  return `<div class="glass panel" id="set_${e}">
+    <div class="row" style="margin-bottom:6px"><span class="ename" style="font-family:'Orbitron';letter-spacing:2px;font-size:14px">${e.toUpperCase()}</span>
+      <span class="spacer"></span><button class="primary mini" onclick="saveEngine('${e}')">Save ${e}</button></div>
+    <div class="saved" id="saved_${e}" hidden style="margin-bottom:8px"></div>
+    ${e==='spot'?'<p class="hint" style="margin:0 0 8px">Spot is long-only and has <b>no stop-loss</b> — it holds until a take-profit, never sells at a loss.</p>':''}
+    ${inner}</div>`;
+}
+function vSettings(){
+  return `<h2>Smart target</h2>
+    <div class="glass panel" style="margin-bottom:14px">
+      <p class="mut" style="margin:0 0 10px;font-size:13px">Pick <b>Smart</b> mode and set one number — your daily profit target. Treo runs both engines and tunes risk to chase it.</p>
+      <div class="row"><div class="field" style="max-width:240px"><label>Daily profit target (USDT)</label>
+        <input id="smartTarget" type="number" step="any" placeholder="e.g. 100" value="${E.futures.C.data.daily_profit_target_usd||''}"></div>
+        <button class="primary" style="align-self:flex-end" onclick="applySmart()">Apply Smart preset</button></div></div>
+    <h2>Engine settings <span class="mut" style="text-transform:none;letter-spacing:0">— spot &amp; futures are separate; neither can change the other</span></h2>
+    <div class="colwrap">${engineSettingsBlock('spot',SPOT_GROUPS)}${engineSettingsBlock('futures',FUT_GROUPS)}</div>
+    <p class="hint">Changes apply within seconds. A risky change asks you to confirm first.</p>`;
+}
+function fillSettings(){ /* rendered by vSettings from E[].C.data; nothing async needed */ }
+
+function readBlock(e){const box=document.getElementById('set_'+e);const patch={};
+  box.querySelectorAll('[data-k]').forEach(el=>{const k=el.getAttribute('data-k');
+    if(BOOL.has(k)){patch[k]=el.value==='true';return;}
+    if(el.type==='number'){if(el.value.trim()==='')return;patch[k]=Number(el.value);return;}
+    patch[k]=el.value;});
+  return patch;}
+
+// plain-language risk checks
+function riskWarnings(e,p){const w=[];
+  if(e==='futures'){
+    if(+p.leverage>3)w.push(`Leverage ${p.leverage}× multiplies every move — a ${(100/ p.leverage).toFixed(0)}% adverse swing can wipe the position.`);
+    if(p.use_stop_loss===false)w.push(`Stop-loss OFF on futures: a losing trade has no automatic exit, so losses can run without limit.`);
+    if((+p.daily_loss_limit_usd||0)===0&&(+p.daily_loss_limit_pct||0)===0)w.push(`No daily loss limit: a bad day won't auto-stop the bot.`);
+    if(+p.reward_risk<1)w.push(`Reward:risk below 1 means winners are smaller than losers — hard to be profitable.`);
+  }
+  if(+p.score_threshold&&+p.score_threshold<3)w.push(`Votes needed = ${p.score_threshold}: it will trade far more often — more noise and more fees.`);
+  if(+p.risk_per_trade_pct>3)w.push(`Risking ${p.risk_per_trade_pct}% per trade is aggressive; a losing streak draws the balance down fast.`);
+  return w;}
+
+function modal(html){document.getElementById('modalHost').innerHTML=html;}
+function closeModal(){document.getElementById('modalHost').innerHTML='';}
+let _pending=null;
+async function saveEngine(e){const patch=readBlock(e);const w=riskWarnings(e,patch);
+  if(w.length){_pending={e,patch};
+    modal(`<div class="modal-bg"><div class="glass modal">
+      <h3>⚠️ Heads up before saving ${e}</h3>
+      <p class="mut" style="font-size:13px;margin:4px 0 12px">This change could hurt more than help. Here's what it means:</p>
+      ${w.map(x=>`<div class="warn-item"><span class="warn-ic">▲</span><span>${x}</span></div>`).join('')}
+      <div class="row" style="margin-top:16px"><button class="danger" onclick="confirmSave()">Save anyway</button>
+        <button class="ghost" onclick="closeModal()">Cancel</button></div></div></div>`);
+    return;}
+  await commitSave(e,patch);
+}
+async function confirmSave(){if(_pending){await commitSave(_pending.e,_pending.patch);_pending=null;}closeModal();}
+async function commitSave(e,patch){
+  const {data}=await sb.from('bot_config').select('revision').eq('id',ROW[e]).single();
+  const rev=((data&&data.revision)||0)+1;
+  const {error}=await sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',ROW[e]);
+  await fetchConfigs();
+  const m=document.getElementById('saved_'+e);if(m){m.hidden=false;
+    m.innerHTML=error?('<span class="neg">Error: '+error.message+'</span>'):'<span class="pos">Saved ✓</span> — applied within seconds.';
+    setTimeout(()=>{if(m)m.hidden=true},4000);}
+}
+async function applySmart(){const t=Number(document.getElementById('smartTarget').value)||0;
+  // Smart preset: moderate, target-aware. Bot decides the rest; user only gave the target.
+  const futPatch=Object.assign({},E.futures.C.data,{
+    daily_profit_target_usd:t, daily_loss_limit_usd:Math.max(0,Math.round(t*0.6)),
+    leverage:2, risk_per_trade_pct:1.5, score_threshold:3, use_stop_loss:true, use_exchange_stop:true,
+    timeframe:'15m', max_open_positions:8, reward_risk:2, trend_ema:200, adx_min:22});
+  const spotPatch=Object.assign({},E.spot.C.data,{
+    timeframe:'15m', score_threshold:3, reward_risk:2, risk_per_trade_pct:1.5, max_open_positions:8, use_sr:true});
+  const bump=async(id,patch)=>{const {data}=await sb.from('bot_config').select('revision').eq('id',id).single();
+    const rev=((data&&data.revision)||0)+1;
+    await sb.from('bot_config').update({data:patch,revision:rev,control:'run',updated_at:new Date().toISOString()}).eq('id',id);};
+  await bump(ROW.futures,futPatch); await bump(ROW.spot,spotPatch);
+  await fetchConfigs(); build();
+  modal(`<div class="modal-bg"><div class="glass modal"><h3>Smart preset applied ✨</h3>
+    <p class="mut" style="font-size:13px">Both engines are live and tuned toward <b>$${t}/day</b>: futures at 2× with a stop and a $${Math.round(t*0.6)} daily loss brake; spot as a patient long-only accumulator. Adjust anything in the engine settings below.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="closeModal()">Got it</button></div></div></div>`);
+}
 
 function card(k,v){return `<div class="glass card"><div class="k">${k}</div><div class="v">${v}</div></div>`}
-function ago(){const s=staleSecs();if(s==null)return 'no data yet';
-  return s<60?`last scan ${s}s ago`:`last scan ${Math.round(s/60)}m ago`;}
 
 const login=document.getElementById('login'),app=document.getElementById('app'),tabs=document.getElementById('tabs'),
-  view=document.getElementById('view'),mode=document.getElementById('mode'),status=document.getElementById('status'),
+  view=document.getElementById('view'),modeSeg=document.getElementById('modeSeg'),
   email_=document.getElementById('email'),password_=document.getElementById('password'),loginMsg=document.getElementById('loginMsg');
 boot();
 </script>
