@@ -382,7 +382,7 @@ function build(){
   syncHeader();
   view.innerHTML=({Command:vCommand,Trades:vTrades,Markets:vMarkets,Settings:vSettings}[active])();
   if(active==='Command')syncCommand();
-  if(active==='Trades'){drawPnl();drawWL();syncTrades();}
+  if(active==='Trades'){drawPnl();drawWL();drawDaily();syncTrades();}
   if(active==='Markets')syncMarkets();
   if(active==='Settings')fillSettings();
 }
@@ -391,7 +391,7 @@ function live(){
   if(active==='Settings')return;
   if(active==='Command'){syncCommand();return;}
   if(active==='Markets'){syncMarkets();return;}
-  if(active==='Trades'){if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();}syncTrades();}
+  if(active==='Trades'){if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();drawDaily();}syncTrades();}
 }
 
 function engPanel(e){const label=e.toUpperCase()+' ENGINE';
@@ -449,13 +449,18 @@ function syncCommand(){
 // ---------- TRADES (combined, engine-filterable) ----------
 let tf_res='all', tf_eng='all';
 function vTrades(){
-  return `<h2>Open now</h2><div id="topen"></div>
-    <h2>Performance</h2>
+  return `<h2>Performance <span class="mut" style="text-transform:none;letter-spacing:0">— ${tf_eng==='all'?'both engines':tf_eng} · net of fees</span></h2>
+    <div class="colwrap">
+      <div class="glass panel"><strong style="font-size:13px">Today</strong><div class="cards" id="statToday" style="margin-top:10px"></div></div>
+      <div class="glass panel"><strong style="font-size:13px">Lifetime</strong><div class="cards" id="statLife" style="margin-top:10px"></div></div>
+    </div>
+    <h2>Daily trend <span class="mut" style="text-transform:none;letter-spacing:0">— net P&amp;L % (bars) and win-rate % (line) per day</span></h2>
+    <div class="glass panel" style="height:260px;padding:16px"><canvas id="dailyChart"></canvas></div>
+    <h2>Open now</h2><div id="topen"></div>
     <div class="charts">
       <div class="glass panel"><strong style="font-size:13px">Cumulative P&amp;L (%)</strong><canvas id="pnlChart"></canvas></div>
       <div class="glass panel"><strong style="font-size:13px">Win / loss</strong><canvas id="wlChart"></canvas>
         <p class="mut" id="wlNote" style="text-align:center;margin:0"></p></div></div>
-    <h2>Stats <span class="mut" style="text-transform:none;letter-spacing:0">— net of fees</span></h2><div class="cards" id="tstats"></div>
     <h2>Breakdown — what's actually working</h2><div id="tbreak"></div>
     <h2>Closed trades</h2>
     <div class="filterbar">
@@ -479,7 +484,7 @@ function btable(title,arr){if(!arr.length)return '';
    arr.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.w/r.n*100)}%</td>
      <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
 function syncTrades(){
-  const el=id=>document.getElementById(id); if(!el('tstats'))return;
+  const el=id=>document.getElementById(id); if(!el('statToday'))return;
   // open positions from both engines
   let openRows='';
   ['spot','futures'].forEach(e=>{const p=E[e].S.positions||{};Object.keys(p).forEach(s=>{const o=p[s];const side=o.side||'long';
@@ -491,12 +496,22 @@ function syncTrades(){
     <tr><th>Engine</th><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>';
   const D=trByEng();
+  const today=new Date().toISOString().slice(0,10);            // UTC date, matches server ts
+  const Dtoday=D.filter(x=>String(x.ts||'').slice(0,10)===today);
   const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
   const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
-  const net=D.reduce((s,x)=>s+ +x.pnl_pct,0);
-  el('tstats').innerHTML=card('Total',D.length)+card('Win rate',D.length?Math.round(wins.length/D.length*100)+'%':'—')+
-    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
-    card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
+  const summ=a=>{const w=a.filter(x=>+x.pnl_pct>0);const net=a.reduce((s,x)=>s+ +x.pnl_pct,0);
+    return {n:a.length,wr:a.length?Math.round(w.length/a.length*100):null,net};};
+  const st=summ(D), stT=summ(Dtoday);
+  const liveUsd = tf_eng==='all'?((E.spot.S.day_pnl_usd||0)+(E.futures.S.day_pnl_usd||0)):(E[tf_eng].S.day_pnl_usd||0);
+  el('statToday').innerHTML=
+    card('Profit today',`<span class="${liveUsd>=0?'pos':'neg'}">${money(liveUsd)}</span>`)+
+    card('Trades',stT.n)+card('Win rate',stT.wr!=null?stT.wr+'%':'—')+
+    card('Net %',`<span class="${stT.net>=0?'pos':'neg'}">${stT.net>=0?'+':''}${stT.net.toFixed(2)}%</span>`);
+  el('statLife').innerHTML=
+    card('Trades',st.n)+card('Win rate',st.wr!=null?st.wr+'%':'—')+
+    card('Net %',`<span class="${st.net>=0?'pos':'neg'}">${st.net>=0?'+':''}${st.net.toFixed(2)}%</span>`)+
+    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`);
   el('tbreak').innerHTML=D.length?(
     btable('Engine',grp(D,x=>x.engine||'futures'))+btable('Side',grp(D,x=>(x.result||'').split(' ')[0]||null))+
     btable('Pair',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
@@ -516,6 +531,22 @@ function drawPnl(){const ctx=document.getElementById('pnlChart');if(!ctx)return;
   let cum=0;const labels=[],vals=[];D.forEach((x,i)=>{cum+=+x.pnl_pct||0;labels.push(i+1);vals.push(+cum.toFixed(2));});
   if(pnlChart)pnlChart.destroy();
   pnlChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:vals,borderColor:css('--series-1'),borderWidth:2,pointRadius:0,tension:.25,fill:true,backgroundColor:'rgba(74,168,255,.12)'}]},options:baseOpts()});}
+function dailyAgg(D){const m={};D.forEach(x=>{const d=String(x.ts||'').slice(0,10);if(!d)return;(m[d]=m[d]||[]).push(+x.pnl_pct);});
+  return Object.keys(m).sort().map(d=>{const v=m[d];const net=v.reduce((a,b)=>a+b,0);const w=v.filter(p=>p>0).length;
+    return {d,net:+net.toFixed(2),wr:Math.round(w/v.length*100),n:v.length};});}
+let dailyChart;
+function drawDaily(){const ctx=document.getElementById('dailyChart');if(!ctx)return;const A=dailyAgg(trByEng());
+  const labels=A.map(x=>x.d.slice(5)),net=A.map(x=>x.net),wr=A.map(x=>x.wr);
+  const colors=net.map(v=>v>=0?css('--good'):css('--bad'));
+  if(dailyChart)dailyChart.destroy();
+  dailyChart=new Chart(ctx,{data:{labels,datasets:[
+    {type:'bar',label:'Net % / day',data:net,backgroundColor:colors,yAxisID:'y',borderRadius:4,order:2},
+    {type:'line',label:'Win % / day',data:wr,borderColor:css('--violet-2'),backgroundColor:css('--violet-2'),borderWidth:2,pointRadius:2,yAxisID:'y1',tension:.3,order:1}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:true,labels:{color:css('--ink-2'),boxWidth:12,padding:12}}},
+      scales:{x:{grid:{color:css('--line')},ticks:{color:css('--muted'),maxTicksLimit:12}},
+        y:{position:'left',grid:{color:css('--line')},ticks:{color:css('--muted')},title:{display:true,text:'Net %',color:css('--muted')}},
+        y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false},ticks:{color:css('--muted')},title:{display:true,text:'Win %',color:css('--muted')}}}}});}
 function drawWL(){const ctx=document.getElementById('wlChart');if(!ctx)return;const D=trByEng();
   const wins=D.filter(x=>+x.pnl_pct>0).length,losses=D.length-wins;
   const note=document.getElementById('wlNote');if(note)note.textContent=D.length?`${wins} wins · ${losses} losses`:'No trades yet';
