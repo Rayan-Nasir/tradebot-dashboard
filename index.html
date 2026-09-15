@@ -292,7 +292,7 @@ const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss
 // MANAGED = strategy dials the ENGINE now owns (baked-in defaults). Hidden from the
 // dashboard so there's nothing to tune — the bot drives these toward your goal itself.
 const MANAGED=new Set(["timeframe","poll_seconds","max_open_positions",
-  "ride_trends","trend_adx_ride","trail_profit_pct","quick_take_pct","eod_sweep","eod_hour_utc"]);
+  "ride_trends","trend_adx_ride","trail_profit_pct"]);
 
 // FUTURES settings — full control
 const FUT_GROUPS=[
@@ -301,8 +301,7 @@ const FUT_GROUPS=[
   ["Signal engine",["score_threshold","atr_mult","min_stop_pct","trend_ema","adx_min","rsi_overbought","rsi_oversold","ema_fast","ema_slow","rsi_period","adx_period","atr_period"]],
   ["Support / resistance",["use_sr","sr_lookback","sr_pivot_bars","sr_near_atr","sr_min_room_r"]],
   ["Market sentiment",["use_fng","fng_extreme_greed","fng_extreme_fear"]],
-  ["Exits — ride trends / scalp ranges",["ride_trends","trend_adx_ride","trail_profit_pct","quick_take_pct"]],
-  ["Evening profit sweep",["eod_sweep","eod_hour_utc"]],
+  ["Exits — ride trends / scalp ranges",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Trade management",["use_stop_loss","use_exchange_stop","breakeven_at_r","trail_atr_mult","cooldown_minutes"]],
   ["Risk & size",["risk_per_trade_pct","reward_risk","max_open_positions","min_notional_usdt","fee_pct"]],
   ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
@@ -311,8 +310,7 @@ const FUT_GROUPS=[
 const SPOT_GROUPS=[
   ["Trading",["symbols","timeframe","poll_seconds"]],
   ["Buy the dip (entry)",["score_threshold","use_sr","sr_near_atr","sr_min_room_r","trend_ema","adx_min","rsi_oversold"]],
-  ["Exits — hold winners, scalp ranges (never sells at a loss)",["ride_trends","trend_adx_ride","trail_profit_pct","quick_take_pct"]],
-  ["Evening profit sweep (banks winners, holds losers)",["eod_sweep","eod_hour_utc"]],
+  ["Exits — hold winners, scalp ranges (never sells at a loss)",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Take profit & size",["reward_risk","risk_per_trade_pct","max_open_positions","min_notional_usdt","cooldown_minutes","fee_pct"]],
   ["Market sentiment",["use_fng","fng_extreme_greed"]],
   ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
@@ -514,7 +512,7 @@ function syncTrades(){
     <tr><th>Engine</th><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>';
   const D=trByEng();
-  const today=new Date().toISOString().slice(0,10);            // UTC date, matches server ts
+  const today=new Date(Date.now()+5*3600*1000).toISOString().slice(0,10);  // PKT date (UTC+5), matches server ts
   const Dtoday=D.filter(x=>String(x.ts||'').slice(0,10)===today);
   const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
   const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
