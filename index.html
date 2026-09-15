@@ -76,6 +76,8 @@ button{font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--line-2
   padding:8px 14px;border-radius:11px;transition:.16s ease;letter-spacing:.02em}
 button:hover{border-color:var(--glow);box-shadow:0 0 0 1px rgba(60,224,255,.25),0 0 18px rgba(60,224,255,.22);transform:translateY(-1px)}
 button:active{transform:translateY(0)}
+button:disabled{cursor:not-allowed;opacity:.45}
+button:disabled:hover{border-color:var(--line-2);box-shadow:none;transform:none}
 button.primary{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#03121b;border-color:transparent;font-weight:800;
   box-shadow:0 4px 18px rgba(60,224,255,.3)}
 button.primary:hover{box-shadow:0 6px 26px rgba(60,224,255,.5)}
@@ -169,27 +171,6 @@ th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.
 .charts .panel canvas{flex:1 1 auto;min-height:0}
 .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;background:rgba(120,150,190,.14);color:var(--muted)}
 .chip.ok{background:rgba(38,230,164,.16);color:var(--good-ink)}
-.chip.pos{background:rgba(38,230,164,.14);color:var(--good-ink)}
-.chip.neg{background:rgba(255,93,114,.15);color:var(--bad-ink)}
-.chip.lg{font-size:12px;padding:5px 11px;border-radius:9px;display:inline-flex;gap:5px;margin:0 2px 4px 0}
-.chip.lg b{font-variant-numeric:tabular-nums}
-/* ---------- BRAIN / AI CONSOLE ---------- */
-.brain{position:relative;padding:22px;border-radius:var(--r);overflow:hidden;
-  background:linear-gradient(180deg,rgba(26,26,58,.62),rgba(18,20,44,.5));
-  border:1px solid rgba(139,108,255,.30);
-  box-shadow:var(--shadow),0 0 46px rgba(139,108,255,.12) inset}
-.brain::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--violet-2),var(--cyan),transparent);opacity:.75}
-.brain .sub{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin:18px 0 9px}
-.brain .row{gap:6px}
-.ainote{margin-top:18px;padding:14px 16px;border-radius:12px;line-height:1.55;
-  background:linear-gradient(100deg,rgba(139,108,255,.14),rgba(60,224,255,.06));
-  border:1px solid rgba(139,108,255,.30);display:flex;gap:11px;align-items:center;flex-wrap:wrap}
-.biaspill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-weight:800;
-  font-size:11px;letter-spacing:.05em;text-transform:capitalize;white-space:nowrap}
-.bias-cautious{background:rgba(255,206,90,.16);color:var(--warn);border:1px solid rgba(255,206,90,.42)}
-.bias-normal{background:rgba(120,150,190,.14);color:var(--ink-2);border:1px solid var(--line-2)}
-.bias-aggressive{background:rgba(38,230,164,.16);color:var(--good-ink);border:1px solid rgba(38,230,164,.42)}
 .field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:500}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:13px}
 .filterbar{display:flex;gap:6px;margin-bottom:12px}
@@ -213,10 +194,13 @@ canvas{max-width:100%}
   .mode-seg button{border:none;border-radius:0;background:transparent;padding:7px 15px;font-size:12px;font-weight:700;letter-spacing:.03em;box-shadow:none}
   .mode-seg button:hover{transform:none;box-shadow:none;color:var(--glow)}
   .mode-seg button.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b}
+  .mode-seg button:disabled{color:var(--muted);opacity:.5}
+  .mode-seg button:disabled:hover{color:var(--muted)}
   .engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:840px){.engine-grid{grid-template-columns:1fr}}
   .eng{padding:18px;position:relative;transition:.25s}
   .eng.off{opacity:.38;filter:grayscale(.5)}
+  .eng.soon{opacity:.55}
   .eng .ehead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
   .eng .ename{font-family:'Orbitron';font-weight:700;letter-spacing:2px;font-size:14px}
   .orb{width:118px;height:118px;border-radius:50%;margin:6px auto 12px;display:grid;place-items:center;text-align:center;
@@ -225,6 +209,7 @@ canvas{max-width:100%}
   .orb.long{background:radial-gradient(circle at 50% 40%,rgba(38,230,164,.42),rgba(6,26,20,.92) 70%);box-shadow:0 0 42px rgba(38,230,164,.5) inset}
   .orb.short{background:radial-gradient(circle at 50% 40%,rgba(255,93,114,.42),rgba(30,8,14,.92) 70%);box-shadow:0 0 42px rgba(255,93,114,.5) inset}
   .orb.halt{background:radial-gradient(circle at 50% 40%,rgba(255,206,90,.3),rgba(30,24,8,.9) 70%)}
+  .orb.dim{animation:none;background:radial-gradient(circle at 50% 40%,rgba(97,120,158,.2),rgba(8,14,24,.9) 70%);box-shadow:0 0 20px rgba(97,120,158,.2) inset}
   .orb .os{font-family:'Orbitron';font-weight:800;font-size:14px;letter-spacing:1px}
   .orb .osub{font-size:10px;color:var(--ink-2);margin-top:3px}
   .ekpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
@@ -238,6 +223,31 @@ canvas{max-width:100%}
   .warn-ic{color:var(--warn);flex:none;font-size:15px}
   .colwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:900px){.colwrap{grid-template-columns:1fr}}
+
+  /* ---------- CONTROL DECK (plain-English Command controls) ---------- */
+  .deck{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:13px;margin:22px 0 6px}
+  .ctl{padding:16px 18px;display:flex;flex-direction:column}
+  .ctl .cl{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+  .ctl .cl .cln{color:var(--ink-2);text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
+  .ctl .cfoot{color:var(--muted);font-size:11px;margin:11px 0 0;line-height:1.5}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chipbtn{padding:8px 13px;border-radius:11px;border:1px solid var(--line-2);background:rgba(10,16,26,.5);
+    font-weight:700;font-size:12.5px;color:var(--ink-2);cursor:pointer;transition:.16s;display:inline-flex;align-items:center;gap:7px}
+  .chipbtn:hover{border-color:var(--glow);color:var(--ink);box-shadow:0 0 14px rgba(60,224,255,.2)}
+  .chipbtn.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b;border-color:transparent;box-shadow:0 3px 14px rgba(60,224,255,.28)}
+  .chipbtn.soon{opacity:.5;cursor:not-allowed}
+  .chipbtn.soon:hover{border-color:var(--line-2);color:var(--ink-2);box-shadow:none}
+  .chipbtn .mi{font-size:14px}
+  .soonpill{font-size:8.5px;font-weight:800;letter-spacing:.06em;padding:2px 6px;border-radius:5px;background:rgba(255,206,90,.16);color:var(--warn)}
+  .aitog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .aitog:last-child{border-bottom:none}
+  .aitog .lbl{font-size:13px;font-weight:600}
+  .aitog .sub{font-size:11px;color:var(--muted);margin-top:2px;max-width:210px}
+  .sw{width:46px;height:26px;border-radius:20px;background:rgba(80,100,130,.32);position:relative;cursor:pointer;transition:.2s;flex:none;border:1px solid var(--line-2)}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#dfeaff;transition:.2s}
+  .sw.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));border-color:transparent}
+  .sw.on::after{left:23px}
+  .sw.violet.on{background:linear-gradient(100deg,var(--violet),var(--violet-2))}
 </style>
 </head>
 <body>
@@ -260,6 +270,7 @@ canvas{max-width:100%}
 <div id="app" hidden>
   <div class="appbar"><div class="inner row">
     <div class="brand"><span class="spark"></span><span class="mark">TREO</span></div>
+    <span class="badge b-mode" id="envBadge">STAGING · TESTNET</span>
     <span class="mode-seg" id="modeSeg"></span>
     <span id="modeNote" class="mut" style="font-size:12px"></span>
     <span class="spacer"></span>
@@ -283,6 +294,7 @@ const ROW={futures:1,spot:2};
 let active="Command";
 let E={futures:{S:{},C:{data:{},control:'run',revision:0}},spot:{S:{},C:{data:{},control:'run',revision:0}}};
 let T=[], pnlChart, wlChart, lastTLen=-1;
+let engView='futures';   // which engine's advanced settings are shown
 
 const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'15m',poll_seconds:20,
   leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,min_stop_pct:0.6,trend_ema:200,adx_min:22,
@@ -301,20 +313,14 @@ const LABELS={symbols:"Pairs (comma separated)",timeframe:"Candle timeframe",pol
   use_stop_loss:"Use stop-loss",use_exchange_stop:"Stop lives on exchange",breakeven_at_r:"Break-even at R (0=off)",
   trail_atr_mult:"Trail stop = ATR × (0=off)",cooldown_minutes:"Cooldown after loss (min)",risk_per_trade_pct:"Risk per trade (%)",
   ride_trends:"Ride strong trends (let winners run)",trend_adx_ride:"Ride when ADX ≥",trail_profit_pct:"Lock profit on pullback (%)",
-  quick_take_pct:"Book profit at (%, 0=off)",eod_sweep:"Evening sweep: close winners at EOD",eod_hour_utc:"Sweep hour (UTC 0–23)",
   autopilot:"Autopilot (auto-loosen if idle)",autopilot_idle_min:"Autopilot: idle mins before loosening",
-  ai_guide:"AI coach: learn & show insights",ai_autopilot:"AI can adapt on its own (avoid losers)",
   auto_universe:"Scan all top coins (auto-universe)",universe_size:"How many top coins to scan",
   reward_risk:"Take-profit = risk ×",max_open_positions:"Max open positions",min_notional_usdt:"Min trade size (USDT)",
   fee_pct:"Fee per trade (%)",daily_profit_target_usd:"Daily profit target (USDT, 0=off)",daily_loss_limit_usd:"Daily loss limit (USDT, 0=off)",
   daily_profit_target_pct:"…or profit target (%)",daily_loss_limit_pct:"…or loss limit (%)",
   ema_fast:"EMA fast",ema_slow:"EMA slow",rsi_period:"RSI period",adx_period:"ADX period",atr_period:"ATR period"};
 
-const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss","use_exchange_stop","ride_trends","autopilot","auto_universe","eod_sweep","ai_guide","ai_autopilot"]);
-// MANAGED = strategy dials the ENGINE now owns (baked-in defaults). Hidden from the
-// dashboard so there's nothing to tune — the bot drives these toward your goal itself.
-const MANAGED=new Set(["timeframe","poll_seconds","max_open_positions",
-  "ride_trends","trend_adx_ride","trail_profit_pct"]);
+const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss","use_exchange_stop","ride_trends","autopilot","auto_universe"]);
 
 // FUTURES settings — full control
 const FUT_GROUPS=[
@@ -326,7 +332,6 @@ const FUT_GROUPS=[
   ["Exits — ride trends / scalp ranges",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Trade management",["use_stop_loss","use_exchange_stop","breakeven_at_r","trail_atr_mult","cooldown_minutes"]],
   ["Risk & size",["risk_per_trade_pct","reward_risk","max_open_positions","min_notional_usdt","fee_pct"]],
-  ["AI coach",["ai_guide","ai_autopilot"]],
   ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
 ];
 // SPOT settings — lean, long-only accumulator, no stop / leverage / short / daily-loss
@@ -336,9 +341,25 @@ const SPOT_GROUPS=[
   ["Exits — hold winners, scalp ranges (never sells at a loss)",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Take profit & size",["reward_risk","risk_per_trade_pct","max_open_positions","min_notional_usdt","cooldown_minutes","fee_pct"]],
   ["Market sentiment",["use_fng","fng_extreme_greed"]],
-  ["AI coach",["ai_guide","ai_autopilot"]],
   ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
 ];
+
+// ---------- MARKETS (crypto live; forex + stocks staged, unlock on adapter+account) ----------
+const MARKETS=[
+  {k:'crypto',label:'Crypto',icon:'₿',live:true},
+  {k:'forex',label:'Forex',icon:'💱',live:false,note:'OANDA demo'},
+  {k:'stocks',label:'US Stocks',icon:'📈',live:false,note:'Alpaca paper'},
+];
+
+// ---------- RISK APPETITE presets (plain-English → advanced dials) ----------
+const RISK={
+  safe:{fut:{score_threshold:4,risk_per_trade_pct:0.75,leverage:1,reward_risk:2.0,max_open_positions:4,adx_min:25,use_stop_loss:true,use_exchange_stop:true},
+        spot:{score_threshold:4,risk_per_trade_pct:0.75,reward_risk:2.0,max_open_positions:3,use_sr:true}},
+  balanced:{fut:{score_threshold:3,risk_per_trade_pct:1.5,leverage:2,reward_risk:2.0,max_open_positions:8,adx_min:22,use_stop_loss:true,use_exchange_stop:true},
+        spot:{score_threshold:3,risk_per_trade_pct:1.5,reward_risk:2.0,max_open_positions:6,use_sr:true}},
+  aggressive:{fut:{score_threshold:2,risk_per_trade_pct:2.5,leverage:3,reward_risk:1.8,max_open_positions:12,adx_min:15,use_stop_loss:true,use_exchange_stop:true},
+        spot:{score_threshold:2,risk_per_trade_pct:2.5,reward_risk:1.8,max_open_positions:8,use_sr:true}},
+};
 
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
@@ -389,7 +410,7 @@ function engStatus(e){const S=E[e].S, on=engRunning(e), st=staleSecs(S);
 
 function syncHeader(){
   const m=currentMode();
-  modeSeg.innerHTML=[['spot','Spot'],['futures','Futures'],['smart','Smart']].map(([k,l])=>
+  modeSeg.innerHTML=[['spot','Spot'],['futures','Futures'],['smart','Both']].map(([k,l])=>
     `<button class="${m===k?'on':''}" onclick="setMode('${k}')">${l}</button>`).join('');
   const note=document.getElementById('modeNote');
   const desc={spot:'spot only · long-only accumulator',futures:'futures only · long + short',
@@ -407,11 +428,16 @@ async function stopAll(){ if(!confirm('STOP both engines and CLOSE every open po
   await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',ROW.futures);
   await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',ROW.spot);}
 
+// shared: bump a config row's data + revision (does NOT touch control/mode)
+async function bumpCfg(id,patch){const {data}=await sb.from('bot_config').select('revision').eq('id',id).single();
+  const rev=((data&&data.revision)||0)+1;
+  return sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',id);}
+
 function build(){
   syncHeader();
   view.innerHTML=({Command:vCommand,Trades:vTrades,Markets:vMarkets,Settings:vSettings}[active])();
   if(active==='Command')syncCommand();
-  if(active==='Trades'){drawPnl();drawWL();drawDaily();syncTrades();}
+  if(active==='Trades'){drawPnl();drawWL();syncTrades();}
   if(active==='Markets')syncMarkets();
   if(active==='Settings')fillSettings();
 }
@@ -420,7 +446,65 @@ function live(){
   if(active==='Settings')return;
   if(active==='Command'){syncCommand();return;}
   if(active==='Markets'){syncMarkets();return;}
-  if(active==='Trades'){if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();drawDaily();}syncTrades();}
+  if(active==='Trades'){if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();}syncTrades();}
+}
+
+/* ==========================================================================
+   COMMAND — plain-English control deck + combined KPIs + engine panels
+   ========================================================================== */
+function ctlMarkets(){
+  return `<div class="glass ctl"><div class="cl">Markets <span class="cln">what to trade</span></div>
+    <div class="chips">${MARKETS.map(m=>`<button class="chipbtn ${m.live?'on':'soon'}" ${m.live?'':'disabled'}
+      onclick="${m.live?'':''}"><span class="mi">${m.icon}</span>${m.label}${m.live?'':'<span class="soonpill">SOON</span>'}</button>`).join('')}</div>
+    <p class="cfoot">Crypto is live. Forex (OANDA) &amp; US Stocks (Alpaca) unlock once their demo accounts are connected.</p></div>`;
+}
+function ctlStyle(){const m=currentMode();
+  const opts=[['spot','Spot'],['futures','Futures'],['smart','Both']];
+  const desc={spot:'Own coins, hold till profit — never sells at a loss.',futures:'Trade both directions, shorter-term, uses stops.',
+    smart:'Runs both engines; you just set the target.',paused:'Both engines paused — pick a style to start.'}[m];
+  return `<div class="glass ctl"><div class="cl">Trade style <span class="cln">how it plays</span></div>
+    <span class="mode-seg">${opts.map(([k,l])=>`<button class="${m===k?'on':''}" onclick="setMode('${k}')">${l}</button>`).join('')}</span>
+    <p class="cfoot">${desc}</p></div>`;
+}
+function riskGuess(){const s=+(E.futures.C.data.score_threshold);if(!s)return null;return s>=4?'safe':(s<=2?'aggressive':'balanced');}
+function ctlRisk(){const cur=riskGuess();
+  const opts=[['safe','Safe'],['balanced','Balanced'],['aggressive','Aggressive']];
+  return `<div class="glass ctl"><div class="cl">Risk appetite <span class="cln">plain English</span></div>
+    <span class="mode-seg">${opts.map(([k,l])=>`<button class="${cur===k?'on':''}" onclick="applyRisk('${k}')">${l}</button>`).join('')}</span>
+    <p class="cfoot">Sets the advanced dials for you. Fine-tune them in <b>Settings</b> only if you know them.</p></div>`;
+}
+function ctlTarget(){const t=E.futures.C.data.daily_profit_target_usd||'';
+  return `<div class="glass ctl"><div class="cl">Daily target <span class="cln">USDT / day</span></div>
+    <div class="row"><input id="cmdTarget" type="number" step="any" placeholder="e.g. 100" value="${t}" style="max-width:130px">
+      <button class="primary mini" onclick="applyTarget()">Set</button></div>
+    <p class="cfoot">In <b>Both</b> mode Treo tunes both engines toward it. 0 / blank = no target.</p></div>`;
+}
+function ctlAI(){const g=aiState('ai_guide',true), a=aiState('ai_autopilot',false);
+  return `<div class="glass ctl" style="grid-column:1/-1"><div class="cl">AI copilot <span class="cln">the coach on the Brain panel</span></div>
+    <div class="aitog"><div><div class="lbl">Coach insights</div><div class="sub">AI reads your results and shows guidance. It only advises — never trades.</div></div>
+      <div class="sw violet ${g?'on':''}" onclick="setAI('ai_guide',${!g})"></div></div>
+    <div class="aitog"><div><div class="lbl">Let AI adapt on its own</div><div class="sub">AI may stop opening coins it flags as losers. It still can't touch your risk, stops or size.</div></div>
+      <div class="sw ${a?'on':''}" onclick="setAI('ai_autopilot',${!a})"></div></div></div>`;
+}
+function aiState(key,def){const v=E.futures.C.data[key]; return v==null?def:(v===true||v==='true');}
+async function setAI(key,val){
+  for(const e of ['spot','futures']){const patch=Object.assign({},E[e].C.data,{[key]:val});await bumpCfg(ROW[e],patch);}
+  await fetchConfigs(); build();
+}
+async function applyRisk(k){const r=RISK[k];
+  await bumpCfg(ROW.futures,Object.assign({},E.futures.C.data,r.fut));
+  await bumpCfg(ROW.spot,Object.assign({},E.spot.C.data,r.spot));
+  await fetchConfigs(); build();
+  modal(`<div class="modal-bg"><div class="glass modal"><h3>Risk set to ${k.charAt(0).toUpperCase()+k.slice(1)} ✓</h3>
+    <p class="mut" style="font-size:13px">Both engines re-tuned. Futures now trades ${k==='safe'?'selectively at 1× with a stop':k==='aggressive'?'actively at 3× with a stop':'balanced at 2× with a stop'}; spot stays a long-only accumulator. Change individual dials any time in Settings.</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="closeModal()">Got it</button></div></div></div>`);
+}
+async function applyTarget(){const t=Number(document.getElementById('cmdTarget').value)||0;
+  await bumpCfg(ROW.futures,Object.assign({},E.futures.C.data,{daily_profit_target_usd:t,daily_loss_limit_usd:Math.max(0,Math.round(t*0.6))}));
+  await fetchConfigs(); build();
+  modal(`<div class="modal-bg"><div class="glass modal"><h3>${t>0?('Daily target set to $'+t+' ✨'):'Daily target cleared'}</h3>
+    <p class="mut" style="font-size:13px">${t>0?('Futures will lock in the day once it makes $'+t+', with a $'+Math.max(0,Math.round(t*0.6))+' daily loss brake. Switch to <b>Both</b> style to run spot alongside it.'):'No daily profit target — the engines run continuously.'}</p>
+    <div class="row" style="margin-top:14px"><button class="primary" onclick="closeModal()">Got it</button></div></div></div>`);
 }
 
 function engPanel(e){const label=e.toUpperCase()+' ENGINE';
@@ -436,10 +520,25 @@ function engPanel(e){const label=e.toUpperCase()+' ENGINE';
     <p class="mut" id="efoot_${e}" style="font-size:11px;margin:12px 0 0"></p>
   </div>`;
 }
+function engPanelSoon(name,icon,note){
+  return `<div class="glass eng soon">
+    <div class="ehead"><span class="ename">${name} ENGINE</span><span class="badge b-mode">SOON</span></div>
+    <div class="orb dim"><div><div class="os">${icon}</div><div class="osub">not connected</div></div></div>
+    <p class="mut" style="font-size:12px;text-align:center;margin:14px 6px 0">Connect a <b>${note}</b> account to activate this engine. Same dashboard, same controls.</p></div>`;
+}
 function vCommand(){
-  return `<div class="cards" id="combo" style="margin:22px 0 6px"></div>
+  return `
+    <div class="deck">
+      ${ctlStyle()}
+      ${ctlMarkets()}
+      ${ctlRisk()}
+      ${ctlTarget()}
+      ${ctlAI()}
+    </div>
+    <div class="cards" id="combo" style="margin:16px 0 6px"></div>
     <h2>Engines</h2>
-    <div class="engine-grid">${engPanel('spot')}${engPanel('futures')}</div>`;
+    <div class="engine-grid">${engPanel('spot')}${engPanel('futures')}</div>
+    <div class="engine-grid" style="margin-top:14px">${engPanelSoon('FOREX','💱','OANDA demo')}${engPanelSoon('US STOCKS','📈','Alpaca paper')}</div>`;
 }
 function money(n){const v=+n||0;return (v>=0?'+$':'−$')+Math.abs(v).toFixed(2);}
 function syncEngine(e){
@@ -477,52 +576,14 @@ function syncCommand(){
 
 // ---------- TRADES (combined, engine-filterable) ----------
 let tf_res='all', tf_eng='all';
-function renderBrain(){
-  const el=id=>document.getElementById(id); if(!el('brainPanel'))return;
-  const eng = tf_eng==='all'?'futures':tf_eng;
-  const ins = (E[eng]&&E[eng].S&&E[eng].S.insights);
-  if(!ins){el('brainPanel').innerHTML=`<p class="mut" style="padding:8px">No analysis yet — appears once ${eng} has closed a few trades (refreshes every ~20 min).</p>`;return;}
-  const o=ins.overall||{};
-  const chip=(b,cls)=>`<span class="chip lg ${cls}">${b.key} <b>${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b> · ${b.win_rate}% · n${b.n}</span>`;
-  const best=(ins.best||[]).map(b=>chip(b,b.avg>=0?'pos':'neg')).join('');
-  const worst=(ins.worst||[]).map(b=>chip(b,'neg')).join('');
-  const side=(ins.by_side||[]).map(b=>`<span class="chip lg ${b.avg>=0?'pos':'neg'}">${b.key} <b>${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b> · n${b.n}</span>`).join('');
-  const ai=ins.ai;
-  const bias=(ai&&ai.bias)||'normal';
-  const avoid=ins.applied_avoid&&ins.applied_avoid.length?ins.applied_avoid:(ins.avoid_suggested||[]);
-  const applied=ins.applied_avoid&&ins.applied_avoid.length;
-  el('brainPanel').innerHTML=`<div class="brain">
-    <div class="cards">
-      ${card('Recent trades',o.n||0)}
-      ${card('Win rate',(o.win_rate||0)+'%')}
-      ${card('Avg / trade',`<span class="${(o.avg||0)>=0?'pos':'neg'}">${(o.avg||0)>=0?'+':''}${(+o.avg||0).toFixed(2)}%</span>`)}
-      ${card('Net (recent)',`<span class="${(o.sum||0)>=0?'pos':'neg'}">${(o.sum||0)>=0?'+':''}${(+o.sum||0).toFixed(1)}%</span>`)}
-    </div>
-    <div class="sub">Best performers</div><div class="row">${best||'<span class="mut">—</span>'}</div>
-    <div class="sub">Worst performers</div><div class="row">${worst||'<span class="mut">—</span>'}</div>
-    <div class="sub">By side</div><div class="row">${side||'<span class="mut">—</span>'}</div>
-    ${ai?`<div class="ainote"><span class="biaspill bias-${bias}">◆ ${bias}</span><span>${ai.note||''}</span></div>`
-       :`<p class="hint" style="margin-top:16px">🧠 AI coach idle — add a free <b>GEMINI_API_KEY</b> on the server for a written read here. The analyzer stats above work without it.</p>`}
-    <div class="sub">${applied?'Currently avoiding · automatic':'Suggested to avoid · enable “AI can adapt” to act'}</div>
-    <div class="row">${avoid.length?avoid.map(s=>`<span class="chip lg neg">${s}</span>`).join(''):'<span class="mut">none — all clear</span>'}</div>
-    <p class="mut" style="font-size:11px;margin:16px 0 0">Refreshed ${ins.updated||''} · most recent trades on ${eng} · updates ~every 20 min</p>
-  </div>`;
-}
 function vTrades(){
-  return `<h2>Performance <span class="mut" style="text-transform:none;letter-spacing:0">— ${tf_eng==='all'?'both engines':tf_eng} · net of fees</span></h2>
-    <div class="colwrap">
-      <div class="glass panel"><strong style="font-size:13px">Today</strong><div class="cards" id="statToday" style="margin-top:10px"></div></div>
-      <div class="glass panel"><strong style="font-size:13px">Lifetime</strong><div class="cards" id="statLife" style="margin-top:10px"></div></div>
-    </div>
-    <h2>Brain <span class="mut" style="text-transform:none;letter-spacing:0">— what the analyzer & AI coach are learning from real trades</span></h2>
-    <div id="brainPanel"></div>
-    <h2>Daily trend<span class="mut" style="text-transform:none;letter-spacing:0">— net P&amp;L % (bars) and win-rate % (line) per day</span></h2>
-    <div class="glass panel" style="height:260px;padding:16px"><canvas id="dailyChart"></canvas></div>
-    <h2>Open now</h2><div id="topen"></div>
+  return `<h2>Open now</h2><div id="topen"></div>
+    <h2>Performance</h2>
     <div class="charts">
       <div class="glass panel"><strong style="font-size:13px">Cumulative P&amp;L (%)</strong><canvas id="pnlChart"></canvas></div>
       <div class="glass panel"><strong style="font-size:13px">Win / loss</strong><canvas id="wlChart"></canvas>
         <p class="mut" id="wlNote" style="text-align:center;margin:0"></p></div></div>
+    <h2>Stats <span class="mut" style="text-transform:none;letter-spacing:0">— net of fees</span></h2><div class="cards" id="tstats"></div>
     <h2>Breakdown — what's actually working</h2><div id="tbreak"></div>
     <h2>Closed trades</h2>
     <div class="filterbar">
@@ -545,19 +606,8 @@ function btable(title,arr){if(!arr.length)return '';
    <table style="margin-top:6px"><tr><th>${title}</th><th>Trades</th><th>Win%</th><th>Net</th></tr>`+
    arr.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.w/r.n*100)}%</td>
      <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
-// open (unrealized) paper $ for one engine = sum over its open positions of
-// (unreal_pct/100) * notional, where notional = amount * entry.
-function engUnreal(e){
-  const p=(E[e]&&E[e].S&&E[e].S.positions)||{};
-  let u=0;
-  Object.values(p).forEach(o=>{
-    const notional=(+o.amount||0)*(+o.entry||0);
-    u+=((+o.unreal_pct||0)/100)*notional;
-  });
-  return u;
-}
 function syncTrades(){
-  const el=id=>document.getElementById(id); if(!el('statToday'))return;
+  const el=id=>document.getElementById(id); if(!el('tstats'))return;
   // open positions from both engines
   let openRows='';
   ['spot','futures'].forEach(e=>{const p=E[e].S.positions||{};Object.keys(p).forEach(s=>{const o=p[s];const side=o.side||'long';
@@ -569,26 +619,12 @@ function syncTrades(){
     <tr><th>Engine</th><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>';
   const D=trByEng();
-  const today=new Date(Date.now()+5*3600*1000).toISOString().slice(0,10);  // PKT date (UTC+5), matches server ts
-  const Dtoday=D.filter(x=>String(x.ts||'').slice(0,10)===today);
   const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
   const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
-  const summ=a=>{const w=a.filter(x=>+x.pnl_pct>0);const net=a.reduce((s,x)=>s+ +x.pnl_pct,0);
-    return {n:a.length,wr:a.length?Math.round(w.length/a.length*100):null,net};};
-  const st=summ(D), stT=summ(Dtoday);
-  const liveUsd = tf_eng==='all'?((E.spot.S.day_pnl_usd||0)+(E.futures.S.day_pnl_usd||0)):(E[tf_eng].S.day_pnl_usd||0);
-  const unreal = tf_eng==='all'?(engUnreal('spot')+engUnreal('futures')):engUnreal(tf_eng);
-  const banked = liveUsd - unreal;   // realized = today's equity change minus open paper P&L
-  el('statToday').innerHTML=
-    card('Banked (realized)',`<span class="${banked>=0?'pos':'neg'}">${money(banked)}</span>`)+
-    card('Open (unrealized)',`<span class="${unreal>=0?'pos':'neg'}">${money(unreal)}</span>`)+
-    card('Trades',stT.n)+card('Win rate',stT.wr!=null?stT.wr+'%':'—')+
-    card('Net %',`<span class="${stT.net>=0?'pos':'neg'}">${stT.net>=0?'+':''}${stT.net.toFixed(2)}%</span>`);
-  el('statLife').innerHTML=
-    card('Trades',st.n)+card('Win rate',st.wr!=null?st.wr+'%':'—')+
-    card('Net %',`<span class="${st.net>=0?'pos':'neg'}">${st.net>=0?'+':''}${st.net.toFixed(2)}%</span>`)+
-    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`);
-  renderBrain();
+  const net=D.reduce((s,x)=>s+ +x.pnl_pct,0);
+  el('tstats').innerHTML=card('Total',D.length)+card('Win rate',D.length?Math.round(wins.length/D.length*100)+'%':'—')+
+    card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
+    card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
   el('tbreak').innerHTML=D.length?(
     btable('Engine',grp(D,x=>x.engine||'futures'))+btable('Side',grp(D,x=>(x.result||'').split(' ')[0]||null))+
     btable('Pair',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
@@ -608,22 +644,6 @@ function drawPnl(){const ctx=document.getElementById('pnlChart');if(!ctx)return;
   let cum=0;const labels=[],vals=[];D.forEach((x,i)=>{cum+=+x.pnl_pct||0;labels.push(i+1);vals.push(+cum.toFixed(2));});
   if(pnlChart)pnlChart.destroy();
   pnlChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:vals,borderColor:css('--series-1'),borderWidth:2,pointRadius:0,tension:.25,fill:true,backgroundColor:'rgba(74,168,255,.12)'}]},options:baseOpts()});}
-function dailyAgg(D){const m={};D.forEach(x=>{const d=String(x.ts||'').slice(0,10);if(!d)return;(m[d]=m[d]||[]).push(+x.pnl_pct);});
-  return Object.keys(m).sort().map(d=>{const v=m[d];const net=v.reduce((a,b)=>a+b,0);const w=v.filter(p=>p>0).length;
-    return {d,net:+net.toFixed(2),wr:Math.round(w/v.length*100),n:v.length};});}
-let dailyChart;
-function drawDaily(){const ctx=document.getElementById('dailyChart');if(!ctx)return;const A=dailyAgg(trByEng());
-  const labels=A.map(x=>x.d.slice(5)),net=A.map(x=>x.net),wr=A.map(x=>x.wr);
-  const colors=net.map(v=>v>=0?css('--good'):css('--bad'));
-  if(dailyChart)dailyChart.destroy();
-  dailyChart=new Chart(ctx,{data:{labels,datasets:[
-    {type:'bar',label:'Net % / day',data:net,backgroundColor:colors,yAxisID:'y',borderRadius:4,order:2},
-    {type:'line',label:'Win % / day',data:wr,borderColor:css('--violet-2'),backgroundColor:css('--violet-2'),borderWidth:2,pointRadius:2,yAxisID:'y1',tension:.3,order:1}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,
-      plugins:{legend:{display:true,labels:{color:css('--ink-2'),boxWidth:12,padding:12}}},
-      scales:{x:{grid:{color:css('--line')},ticks:{color:css('--muted'),maxTicksLimit:12}},
-        y:{position:'left',grid:{color:css('--line')},ticks:{color:css('--muted')},title:{display:true,text:'Net %',color:css('--muted')}},
-        y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false},ticks:{color:css('--muted')},title:{display:true,text:'Win %',color:css('--muted')}}}}});}
 function drawWL(){const ctx=document.getElementById('wlChart');if(!ctx)return;const D=trByEng();
   const wins=D.filter(x=>+x.pnl_pct>0).length,losses=D.length-wins;
   const note=document.getElementById('wlNote');if(note)note.textContent=D.length?`${wins} wins · ${losses} losses`:'No trades yet';
@@ -647,7 +667,11 @@ function mktTable(e){const S=E[e].S,sig=S.signals||{};
 function syncMarkets(){const box=document.getElementById('marketsBox');if(!box)return;
   box.innerHTML=mktTable('spot')+mktTable('futures');}
 
-// ---------- SETTINGS (separate per engine + smart target + risk modal) ----------
+/* ==========================================================================
+   SETTINGS — advanced dials only, one engine at a time
+   (everyday controls now live in Command)
+   ========================================================================== */
+function setEngView(e){engView=e;build();}
 function fieldHTML(k,v){const label=LABELS[k]||k; if(Array.isArray(v))v=v.join(', ');
   if(BOOL.has(k)){const on=(v===true||v==='true');
     return `<div class="field"><label>${label}</label><select data-k="${k}">
@@ -656,12 +680,9 @@ function fieldHTML(k,v){const label=LABELS[k]||k; if(Array.isArray(v))v=v.join('
   return `<div class="field"><label>${label}</label><input data-k="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;
 }
 function engineSettingsBlock(e,groups){const cfg=E[e].C.data||{};
-  const inner=groups.map(([title,keys])=>{
-    const vis=keys.filter(k=>!MANAGED.has(k));           // drop engine-managed dials
-    if(!vis.length)return '';                            // whole group managed -> hide it
-    return `
+  const inner=groups.map(([title,keys])=>`
     <div style="margin-bottom:12px"><div class="mut" style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:10px 0 8px">${title}</div>
-      <div class="form-grid">${vis.map(k=>{let v=cfg[k];if(v==null)v=DEFAULTS[k];return fieldHTML(k,v);}).join('')}</div></div>`;}).join('');
+      <div class="form-grid">${keys.map(k=>{let v=cfg[k];if(v==null)v=DEFAULTS[k];return fieldHTML(k,v);}).join('')}</div></div>`).join('');
   return `<div class="glass panel" id="set_${e}">
     <div class="row" style="margin-bottom:6px"><span class="ename" style="font-family:'Orbitron';letter-spacing:2px;font-size:14px">${e.toUpperCase()}</span>
       <span class="spacer"></span><button class="primary mini" onclick="saveEngine('${e}')">Save ${e}</button></div>
@@ -670,15 +691,15 @@ function engineSettingsBlock(e,groups){const cfg=E[e].C.data||{};
     ${inner}</div>`;
 }
 function vSettings(){
-  return `<h2>Smart target</h2>
+  const segs=[['spot','Spot',true],['futures','Futures',true],['forex','Forex',false],['stocks','US Stocks',false]];
+  const block=engView==='spot'?engineSettingsBlock('spot',SPOT_GROUPS):engineSettingsBlock('futures',FUT_GROUPS);
+  return `<h2>Advanced settings <span class="mut" style="text-transform:none;letter-spacing:0">— the dials experienced traders tune</span></h2>
     <div class="glass panel" style="margin-bottom:14px">
-      <p class="mut" style="margin:0 0 10px;font-size:13px">Pick <b>Smart</b> mode and set one number — your daily profit target. Treo runs both engines and tunes risk to chase it.</p>
-      <div class="row"><div class="field" style="max-width:240px"><label>Daily profit target (USDT)</label>
-        <input id="smartTarget" type="number" step="any" placeholder="e.g. 100" value="${E.futures.C.data.daily_profit_target_usd||''}"></div>
-        <button class="primary" style="align-self:flex-end" onclick="applySmart()">Apply Smart preset</button></div></div>
-    <h2>Engine settings <span class="mut" style="text-transform:none;letter-spacing:0">— spot &amp; futures are separate; neither can change the other</span></h2>
-    <div class="colwrap">${engineSettingsBlock('spot',SPOT_GROUPS)}${engineSettingsBlock('futures',FUT_GROUPS)}</div>
-    <p class="hint">Changes apply within seconds. A risky change asks you to confirm first.</p>`;
+      <p class="mut" style="margin:0;font-size:13px">These are the raw indicators, ratios and risk levers. Everyday controls — <b>markets, style, risk appetite, daily target and the AI copilot</b> — all live on the <b>Command</b> tab. If you're not sure, set your <b>Risk appetite</b> there and leave these alone.</p></div>
+    <div class="row" style="margin-bottom:14px"><span class="mut" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-right:4px">Editing:</span>
+      <span class="mode-seg">${segs.map(([k,l,live])=>`<button class="${engView===k?'on':''}" ${live?'':'disabled'} onclick="${live?`setEngView('${k}')`:''}">${l}${live?'':' · soon'}</button>`).join('')}</span></div>
+    <div id="setWrap">${block}</div>
+    <p class="hint">Changes apply within seconds. A risky change asks you to confirm first. Forex &amp; US-Stocks dials appear here once those engines are connected.</p>`;
 }
 function fillSettings(){ /* rendered by vSettings from E[].C.data; nothing async needed */ }
 
@@ -724,23 +745,6 @@ async function commitSave(e,patch){
   const m=document.getElementById('saved_'+e);if(m){m.hidden=false;
     m.innerHTML=error?('<span class="neg">Error: '+error.message+'</span>'):'<span class="pos">Saved ✓</span> — applied within seconds.';
     setTimeout(()=>{if(m)m.hidden=true},4000);}
-}
-async function applySmart(){const t=Number(document.getElementById('smartTarget').value)||0;
-  // Smart preset: moderate, target-aware. Bot decides the rest; user only gave the target.
-  const futPatch=Object.assign({},E.futures.C.data,{
-    daily_profit_target_usd:t, daily_loss_limit_usd:Math.max(0,Math.round(t*0.6)),
-    leverage:2, risk_per_trade_pct:1.5, score_threshold:3, use_stop_loss:true, use_exchange_stop:true,
-    timeframe:'15m', max_open_positions:8, reward_risk:2, trend_ema:200, adx_min:22});
-  const spotPatch=Object.assign({},E.spot.C.data,{
-    timeframe:'15m', score_threshold:3, reward_risk:2, risk_per_trade_pct:1.5, max_open_positions:8, use_sr:true});
-  const bump=async(id,patch)=>{const {data}=await sb.from('bot_config').select('revision').eq('id',id).single();
-    const rev=((data&&data.revision)||0)+1;
-    await sb.from('bot_config').update({data:patch,revision:rev,control:'run',updated_at:new Date().toISOString()}).eq('id',id);};
-  await bump(ROW.futures,futPatch); await bump(ROW.spot,spotPatch);
-  await fetchConfigs(); build();
-  modal(`<div class="modal-bg"><div class="glass modal"><h3>Smart preset applied ✨</h3>
-    <p class="mut" style="font-size:13px">Both engines are live and tuned toward <b>$${t}/day</b>: futures at 2× with a stop and a $${Math.round(t*0.6)} daily loss brake; spot as a patient long-only accumulator. Adjust anything in the engine settings below.</p>
-    <div class="row" style="margin-top:14px"><button class="primary" onclick="closeModal()">Got it</button></div></div></div>`);
 }
 
 function card(k,v){return `<div class="glass card"><div class="k">${k}</div><div class="v">${v}</div></div>`}
