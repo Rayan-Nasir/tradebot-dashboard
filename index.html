@@ -483,6 +483,17 @@ function btable(title,arr){if(!arr.length)return '';
    <table style="margin-top:6px"><tr><th>${title}</th><th>Trades</th><th>Win%</th><th>Net</th></tr>`+
    arr.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.w/r.n*100)}%</td>
      <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
+// open (unrealized) paper $ for one engine = sum over its open positions of
+// (unreal_pct/100) * notional, where notional = amount * entry.
+function engUnreal(e){
+  const p=(E[e]&&E[e].S&&E[e].S.positions)||{};
+  let u=0;
+  Object.values(p).forEach(o=>{
+    const notional=(+o.amount||0)*(+o.entry||0);
+    u+=((+o.unreal_pct||0)/100)*notional;
+  });
+  return u;
+}
 function syncTrades(){
   const el=id=>document.getElementById(id); if(!el('statToday'))return;
   // open positions from both engines
@@ -504,8 +515,11 @@ function syncTrades(){
     return {n:a.length,wr:a.length?Math.round(w.length/a.length*100):null,net};};
   const st=summ(D), stT=summ(Dtoday);
   const liveUsd = tf_eng==='all'?((E.spot.S.day_pnl_usd||0)+(E.futures.S.day_pnl_usd||0)):(E[tf_eng].S.day_pnl_usd||0);
+  const unreal = tf_eng==='all'?(engUnreal('spot')+engUnreal('futures')):engUnreal(tf_eng);
+  const banked = liveUsd - unreal;   // realized = today's equity change minus open paper P&L
   el('statToday').innerHTML=
-    card('Profit today',`<span class="${liveUsd>=0?'pos':'neg'}">${money(liveUsd)}</span>`)+
+    card('Banked (realized)',`<span class="${banked>=0?'pos':'neg'}">${money(banked)}</span>`)+
+    card('Open (unrealized)',`<span class="${unreal>=0?'pos':'neg'}">${money(unreal)}</span>`)+
     card('Trades',stT.n)+card('Win rate',stT.wr!=null?stT.wr+'%':'—')+
     card('Net %',`<span class="${stT.net>=0?'pos':'neg'}">${stT.net>=0?'+':''}${stT.net.toFixed(2)}%</span>`);
   el('statLife').innerHTML=
