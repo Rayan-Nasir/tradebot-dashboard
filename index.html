@@ -282,13 +282,14 @@ const LABELS={symbols:"Pairs (comma separated)",timeframe:"Candle timeframe",pol
   ride_trends:"Ride strong trends (let winners run)",trend_adx_ride:"Ride when ADX ≥",trail_profit_pct:"Lock profit on pullback (%)",
   quick_take_pct:"Book profit at (%, 0=off)",eod_sweep:"Evening sweep: close winners at EOD",eod_hour_utc:"Sweep hour (UTC 0–23)",
   autopilot:"Autopilot (auto-loosen if idle)",autopilot_idle_min:"Autopilot: idle mins before loosening",
+  ai_guide:"AI coach: learn & show insights",ai_autopilot:"AI can adapt on its own (avoid losers)",
   auto_universe:"Scan all top coins (auto-universe)",universe_size:"How many top coins to scan",
   reward_risk:"Take-profit = risk ×",max_open_positions:"Max open positions",min_notional_usdt:"Min trade size (USDT)",
   fee_pct:"Fee per trade (%)",daily_profit_target_usd:"Daily profit target (USDT, 0=off)",daily_loss_limit_usd:"Daily loss limit (USDT, 0=off)",
   daily_profit_target_pct:"…or profit target (%)",daily_loss_limit_pct:"…or loss limit (%)",
   ema_fast:"EMA fast",ema_slow:"EMA slow",rsi_period:"RSI period",adx_period:"ADX period",atr_period:"ATR period"};
 
-const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss","use_exchange_stop","ride_trends","autopilot","auto_universe","eod_sweep"]);
+const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss","use_exchange_stop","ride_trends","autopilot","auto_universe","eod_sweep","ai_guide","ai_autopilot"]);
 // MANAGED = strategy dials the ENGINE now owns (baked-in defaults). Hidden from the
 // dashboard so there's nothing to tune — the bot drives these toward your goal itself.
 const MANAGED=new Set(["timeframe","poll_seconds","max_open_positions",
@@ -304,6 +305,7 @@ const FUT_GROUPS=[
   ["Exits — ride trends / scalp ranges",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Trade management",["use_stop_loss","use_exchange_stop","breakeven_at_r","trail_atr_mult","cooldown_minutes"]],
   ["Risk & size",["risk_per_trade_pct","reward_risk","max_open_positions","min_notional_usdt","fee_pct"]],
+  ["AI coach",["ai_guide","ai_autopilot"]],
   ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
 ];
 // SPOT settings — lean, long-only accumulator, no stop / leverage / short / daily-loss
@@ -313,6 +315,7 @@ const SPOT_GROUPS=[
   ["Exits — hold winners, scalp ranges (never sells at a loss)",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Take profit & size",["reward_risk","risk_per_trade_pct","max_open_positions","min_notional_usdt","cooldown_minutes","fee_pct"]],
   ["Market sentiment",["use_fng","fng_extreme_greed"]],
+  ["AI coach",["ai_guide","ai_autopilot"]],
   ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
 ];
 
@@ -453,13 +456,48 @@ function syncCommand(){
 
 // ---------- TRADES (combined, engine-filterable) ----------
 let tf_res='all', tf_eng='all';
+function renderBrain(){
+  const el=id=>document.getElementById(id); if(!el('brainPanel'))return;
+  const eng = tf_eng==='all'?'futures':tf_eng;
+  const ins = (E[eng]&&E[eng].S&&E[eng].S.insights);
+  if(!ins){el('brainPanel').innerHTML=`<p class="mut" style="padding:8px">No analysis yet — appears once ${eng} has closed a few trades (refreshes every ~20 min).</p>`;return;}
+  const o=ins.overall||{};
+  const chip=(b,neg)=>`<span class="chip" style="${(neg?'':'')}">${b.key} <b class="${b.avg>=0?'pos':'neg'}">${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b> · ${b.win_rate}% · n${b.n}</span>`;
+  const best=(ins.best||[]).map(b=>chip(b)).join(' ');
+  const worst=(ins.worst||[]).map(b=>chip(b,true)).join(' ');
+  const side=(ins.by_side||[]).map(b=>`${b.key} <b class="${b.avg>=0?'pos':'neg'}">${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b>`).join(' · ');
+  const ai=ins.ai;
+  const biasColor={cautious:'neg',aggressive:'pos',normal:'mut'}[(ai&&ai.bias)||'normal']||'mut';
+  const avoid=ins.applied_avoid&&ins.applied_avoid.length?ins.applied_avoid:(ins.avoid_suggested||[]);
+  const applied=ins.applied_avoid&&ins.applied_avoid.length;
+  el('brainPanel').innerHTML=`<div class="glass panel">
+    <div class="cards">
+      ${card('Recent trades',o.n||0)}
+      ${card('Win rate',(o.win_rate||0)+'%')}
+      ${card('Avg / trade',`<span class="${(o.avg||0)>=0?'pos':'neg'}">${(o.avg||0)>=0?'+':''}${(+o.avg||0).toFixed(2)}%</span>`)}
+      ${card('Net (recent)',`<span class="${(o.sum||0)>=0?'pos':'neg'}">${(o.sum||0)>=0?'+':''}${(+o.sum||0).toFixed(1)}%</span>`)}
+    </div>
+    <div style="margin-top:12px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Best coins</div>${best||'<span class="mut">—</span>'}</div>
+    <div style="margin-top:10px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Worst coins</div>${worst||'<span class="mut">—</span>'}</div>
+    <div style="margin-top:10px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">By side</div><span class="mut">${side||'—'}</span></div>
+    ${ai?`<div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(255,255,255,.04)">
+        <span class="chip">AI bias: <b class="${biasColor}">${ai.bias}</b></span>
+        <span style="margin-left:8px">${ai.note||''}</span></div>`
+       :`<p class="hint" style="margin:12px 0 0">AI coach off — add a free GEMINI_API_KEY on the server to get a written read here. The analyzer above works regardless.</p>`}
+    <div style="margin-top:12px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">${applied?'Currently avoiding (auto)':'Suggested to avoid (turn on AI-adapt to act)'}</div>
+      ${avoid.length?avoid.map(s=>`<span class="chip neg">${s}</span>`).join(' '):'<span class="mut">none</span>'}</div>
+    <p class="mut" style="font-size:11px;margin:10px 0 0">Updated ${ins.updated||''} · analysing the most recent trades on ${eng}.</p>
+  </div>`;
+}
 function vTrades(){
   return `<h2>Performance <span class="mut" style="text-transform:none;letter-spacing:0">— ${tf_eng==='all'?'both engines':tf_eng} · net of fees</span></h2>
     <div class="colwrap">
       <div class="glass panel"><strong style="font-size:13px">Today</strong><div class="cards" id="statToday" style="margin-top:10px"></div></div>
       <div class="glass panel"><strong style="font-size:13px">Lifetime</strong><div class="cards" id="statLife" style="margin-top:10px"></div></div>
     </div>
-    <h2>Daily trend <span class="mut" style="text-transform:none;letter-spacing:0">— net P&amp;L % (bars) and win-rate % (line) per day</span></h2>
+    <h2>Brain <span class="mut" style="text-transform:none;letter-spacing:0">— what the analyzer & AI coach are learning from real trades</span></h2>
+    <div id="brainPanel"></div>
+    <h2>Daily trend<span class="mut" style="text-transform:none;letter-spacing:0">— net P&amp;L % (bars) and win-rate % (line) per day</span></h2>
     <div class="glass panel" style="height:260px;padding:16px"><canvas id="dailyChart"></canvas></div>
     <h2>Open now</h2><div id="topen"></div>
     <div class="charts">
@@ -531,6 +569,7 @@ function syncTrades(){
     card('Trades',st.n)+card('Win rate',st.wr!=null?st.wr+'%':'—')+
     card('Net %',`<span class="${st.net>=0?'pos':'neg'}">${st.net>=0?'+':''}${st.net.toFixed(2)}%</span>`)+
     card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`);
+  renderBrain();
   el('tbreak').innerHTML=D.length?(
     btable('Engine',grp(D,x=>x.engine||'futures'))+btable('Side',grp(D,x=>(x.result||'').split(' ')[0]||null))+
     btable('Pair',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
