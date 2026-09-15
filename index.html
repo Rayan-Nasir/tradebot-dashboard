@@ -169,6 +169,27 @@ th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.
 .charts .panel canvas{flex:1 1 auto;min-height:0}
 .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;background:rgba(120,150,190,.14);color:var(--muted)}
 .chip.ok{background:rgba(38,230,164,.16);color:var(--good-ink)}
+.chip.pos{background:rgba(38,230,164,.14);color:var(--good-ink)}
+.chip.neg{background:rgba(255,93,114,.15);color:var(--bad-ink)}
+.chip.lg{font-size:12px;padding:5px 11px;border-radius:9px;display:inline-flex;gap:5px;margin:0 2px 4px 0}
+.chip.lg b{font-variant-numeric:tabular-nums}
+/* ---------- BRAIN / AI CONSOLE ---------- */
+.brain{position:relative;padding:22px;border-radius:var(--r);overflow:hidden;
+  background:linear-gradient(180deg,rgba(26,26,58,.62),rgba(18,20,44,.5));
+  border:1px solid rgba(139,108,255,.30);
+  box-shadow:var(--shadow),0 0 46px rgba(139,108,255,.12) inset}
+.brain::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--violet-2),var(--cyan),transparent);opacity:.75}
+.brain .sub{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin:18px 0 9px}
+.brain .row{gap:6px}
+.ainote{margin-top:18px;padding:14px 16px;border-radius:12px;line-height:1.55;
+  background:linear-gradient(100deg,rgba(139,108,255,.14),rgba(60,224,255,.06));
+  border:1px solid rgba(139,108,255,.30);display:flex;gap:11px;align-items:center;flex-wrap:wrap}
+.biaspill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-weight:800;
+  font-size:11px;letter-spacing:.05em;text-transform:capitalize;white-space:nowrap}
+.bias-cautious{background:rgba(255,206,90,.16);color:var(--warn);border:1px solid rgba(255,206,90,.42)}
+.bias-normal{background:rgba(120,150,190,.14);color:var(--ink-2);border:1px solid var(--line-2)}
+.bias-aggressive{background:rgba(38,230,164,.16);color:var(--good-ink);border:1px solid rgba(38,230,164,.42)}
 .field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:500}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:13px}
 .filterbar{display:flex;gap:6px;margin-bottom:12px}
@@ -462,31 +483,29 @@ function renderBrain(){
   const ins = (E[eng]&&E[eng].S&&E[eng].S.insights);
   if(!ins){el('brainPanel').innerHTML=`<p class="mut" style="padding:8px">No analysis yet — appears once ${eng} has closed a few trades (refreshes every ~20 min).</p>`;return;}
   const o=ins.overall||{};
-  const chip=(b,neg)=>`<span class="chip" style="${(neg?'':'')}">${b.key} <b class="${b.avg>=0?'pos':'neg'}">${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b> · ${b.win_rate}% · n${b.n}</span>`;
-  const best=(ins.best||[]).map(b=>chip(b)).join(' ');
-  const worst=(ins.worst||[]).map(b=>chip(b,true)).join(' ');
-  const side=(ins.by_side||[]).map(b=>`${b.key} <b class="${b.avg>=0?'pos':'neg'}">${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b>`).join(' · ');
+  const chip=(b,cls)=>`<span class="chip lg ${cls}">${b.key} <b>${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b> · ${b.win_rate}% · n${b.n}</span>`;
+  const best=(ins.best||[]).map(b=>chip(b,b.avg>=0?'pos':'neg')).join('');
+  const worst=(ins.worst||[]).map(b=>chip(b,'neg')).join('');
+  const side=(ins.by_side||[]).map(b=>`<span class="chip lg ${b.avg>=0?'pos':'neg'}">${b.key} <b>${b.avg>=0?'+':''}${(+b.avg).toFixed(2)}%</b> · n${b.n}</span>`).join('');
   const ai=ins.ai;
-  const biasColor={cautious:'neg',aggressive:'pos',normal:'mut'}[(ai&&ai.bias)||'normal']||'mut';
+  const bias=(ai&&ai.bias)||'normal';
   const avoid=ins.applied_avoid&&ins.applied_avoid.length?ins.applied_avoid:(ins.avoid_suggested||[]);
   const applied=ins.applied_avoid&&ins.applied_avoid.length;
-  el('brainPanel').innerHTML=`<div class="glass panel">
+  el('brainPanel').innerHTML=`<div class="brain">
     <div class="cards">
       ${card('Recent trades',o.n||0)}
       ${card('Win rate',(o.win_rate||0)+'%')}
       ${card('Avg / trade',`<span class="${(o.avg||0)>=0?'pos':'neg'}">${(o.avg||0)>=0?'+':''}${(+o.avg||0).toFixed(2)}%</span>`)}
       ${card('Net (recent)',`<span class="${(o.sum||0)>=0?'pos':'neg'}">${(o.sum||0)>=0?'+':''}${(+o.sum||0).toFixed(1)}%</span>`)}
     </div>
-    <div style="margin-top:12px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Best coins</div>${best||'<span class="mut">—</span>'}</div>
-    <div style="margin-top:10px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Worst coins</div>${worst||'<span class="mut">—</span>'}</div>
-    <div style="margin-top:10px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">By side</div><span class="mut">${side||'—'}</span></div>
-    ${ai?`<div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(255,255,255,.04)">
-        <span class="chip">AI bias: <b class="${biasColor}">${ai.bias}</b></span>
-        <span style="margin-left:8px">${ai.note||''}</span></div>`
-       :`<p class="hint" style="margin:12px 0 0">AI coach off — add a free GEMINI_API_KEY on the server to get a written read here. The analyzer above works regardless.</p>`}
-    <div style="margin-top:12px"><div class="mut" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">${applied?'Currently avoiding (auto)':'Suggested to avoid (turn on AI-adapt to act)'}</div>
-      ${avoid.length?avoid.map(s=>`<span class="chip neg">${s}</span>`).join(' '):'<span class="mut">none</span>'}</div>
-    <p class="mut" style="font-size:11px;margin:10px 0 0">Updated ${ins.updated||''} · analysing the most recent trades on ${eng}.</p>
+    <div class="sub">Best performers</div><div class="row">${best||'<span class="mut">—</span>'}</div>
+    <div class="sub">Worst performers</div><div class="row">${worst||'<span class="mut">—</span>'}</div>
+    <div class="sub">By side</div><div class="row">${side||'<span class="mut">—</span>'}</div>
+    ${ai?`<div class="ainote"><span class="biaspill bias-${bias}">◆ ${bias}</span><span>${ai.note||''}</span></div>`
+       :`<p class="hint" style="margin-top:16px">🧠 AI coach idle — add a free <b>GEMINI_API_KEY</b> on the server for a written read here. The analyzer stats above work without it.</p>`}
+    <div class="sub">${applied?'Currently avoiding · automatic':'Suggested to avoid · enable “AI can adapt” to act'}</div>
+    <div class="row">${avoid.length?avoid.map(s=>`<span class="chip lg neg">${s}</span>`).join(''):'<span class="mut">none — all clear</span>'}</div>
+    <p class="mut" style="font-size:11px;margin:16px 0 0">Refreshed ${ins.updated||''} · most recent trades on ${eng} · updates ~every 20 min</p>
   </div>`;
 }
 function vTrades(){
