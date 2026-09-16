@@ -334,12 +334,24 @@ async function stopAll(){if(!confirm('STOP every engine and CLOSE all open posit
   for(const id of ALLIDS){await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',id);}}
 async function closePos(e,sym){
   if(!confirm(`Close ${sym} on the ${e} engine now, at market?`))return;
-  const cur=E[e].C.control||'run';
-  const restore=(cur==='pause'||cur==='stop')?cur:'run';   // don't change whether the engine keeps running
-  await sb.from('bot_config').update({control:`close:${sym}|${restore}`,updated_at:new Date().toISOString()}).eq('id',ROW[e]);
-  const btns=document.querySelectorAll(`#topen button`); btns.forEach(b=>{if(b.textContent==='Close'){b.textContent='closing…';b.disabled=true;}});
-  await fetchConfigs();
+  // Append to this engine's close queue (never touches run/pause). The engine
+  // market-closes each queued symbol on its next cycle, then trims the queue.
+  const data=Object.assign({},E[e].C.data||{});
+  const q=Array.isArray(data.close_queue)?data.close_queue.slice():[];
+  if(!q.includes(sym))q.push(sym);
+  data.close_queue=q;
+  const rev=((E[e].C.revision)||0)+1;
+  await sb.from('bot_config').update({data:data,revision:rev,updated_at:new Date().toISOString()}).eq('id',ROW[e]);
+  await fetchConfigs(); build();
 }
+function isQueued(e,sym){const q=(E[e].C.data||{}).close_queue||[];return q.includes(sym);}
+async function closeAllEngine(e){const syms=Object.keys(E[e].S.positions||{});if(!syms.length)return;
+  if(!confirm(`Close ALL ${syms.length} open ${e} position(s) now, at market?`))return;
+  const data=Object.assign({},E[e].C.data||{});const q=Array.isArray(data.close_queue)?data.close_queue.slice():[];
+  syms.forEach(s=>{if(!q.includes(s))q.push(s);});data.close_queue=q;
+  const rev=((E[e].C.revision)||0)+1;
+  await sb.from('bot_config').update({data:data,revision:rev,updated_at:new Date().toISOString()}).eq('id',ROW[e]);
+  await fetchConfigs();build();}
 async function bumpCfg(id,patch){const {data}=await sb.from('bot_config').select('revision').eq('id',id).single();
   const rev=((data&&data.revision)||0)+1;
   return sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',id);}
@@ -524,8 +536,10 @@ function syncTrades(){
     openRows+=`<tr><td><span class="chip">${e}</span></td><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
       <td>${fmt(o.entry)}</td><td>${o.stop?fmt(o.stop):'—'}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
       <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td>
-      <td><button class="mini danger" onclick="closePos('${e}','${s}')">Close</button></td></tr>`;});});
-  el('topen').innerHTML=openRows?`<div class="glass panel tblwrap"><table>
+      <td>${isQueued(e,s)?'<span class="mut">closing…</span>':`<button class="mini danger" onclick="closePos('${e}','${s}')">Close</button>`}</td></tr>`;});});
+  const bar=ENGINES.filter(e=>Object.keys(E[e].S.positions||{}).length)
+    .map(e=>`<button class="mini danger" onclick="closeAllEngine('${e}')">Close all ${e} (${Object.keys(E[e].S.positions||{}).length})</button>`).join('');
+  el('topen').innerHTML=openRows?`${bar?`<div class="filterbar">${bar}</div>`:''}<div class="glass panel tblwrap"><table>
     <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th><th>Action</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>';
   const D=trByEng();
