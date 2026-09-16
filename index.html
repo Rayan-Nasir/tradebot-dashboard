@@ -352,13 +352,38 @@ function live(){
 }
 
 /* ---------- COMMAND ---------- */
-function ctlMarkets(){
+function ctlMarketsBar(){
   const st={crypto:engRunning('spot')||engRunning('futures'),forex:engRunning('forex'),stocks:engRunning('stocks')};
+  const liveCount=[st.crypto,st.forex,st.stocks].filter(Boolean).length;
+  const allOn=liveCount===3;
   const chip=k=>`<button class="chipbtn ${st[k]?'on':''}" onclick="setMarket('${k}',${!st[k]})"><span class="mi">${MKT[k].icon}</span>${MKT[k].label}</button>`;
-  return `<div class="glass ctl"><div class="cl">Markets <span class="cln">tap to trade / pause</span></div>
-    <div class="chips">${chip('crypto')}${chip('forex')}${chip('stocks')}</div>
-    <p class="cfoot">Each market runs on its own demo account. Tap to start or pause it.</p></div>`;
+  return `<div class="glass ctl" style="margin:22px 0 6px"><div class="cl">Markets
+      <span class="cln">tap any to start / pause · ${liveCount}/3 markets live</span></div>
+    <div class="chips">
+      <button class="chipbtn ${allOn?'on':''}" onclick="setAllMarkets(${!allOn})" style="border-color:var(--violet-2);${allOn?'':'color:var(--violet-2)'}">
+        <span class="mi">✦</span>${allOn?'All markets ON':'Run all markets'}</button>
+      ${chip('crypto')}${chip('forex')}${chip('stocks')}</div>
+    <p class="cfoot"><b>Run all markets</b> turns on crypto, forex and stocks together, so the bot trades every market at once on its own. Tap any single market to toggle just that one.</p></div>`;
 }
+async function setAllMarkets(on){for(const id of ALLIDS){await setCtrl(id,on);}await fetchConfigs();build();}
+
+function engCfg(e,key,def){const v=E[e].C.data[key];return v==null?def:(v===true||v==='true');}
+function aiEngStatus(e){
+  const S=E[e].S, ins=S.insights, guide=engCfg(e,'ai_guide',true);
+  if(!engRunning(e)) return {dot:'dot-pause',txt:'paused',sub:'market is off'};
+  if(!guide) return {dot:'dot-pause',txt:'coach off',sub:'enable in Controls below'};
+  if(!ins||!ins.updated) return {dot:'dot-pause',txt:'starting…',sub:'first read within ~20 min'};
+  const aiOn=ins.ai_on;
+  const note=(ins.ai&&ins.ai.note)||((ins.avoid_suggested&&ins.avoid_suggested.length)?('avoiding '+ins.avoid_suggested.join(', ')):'baseline — nothing flagged');
+  return {dot:'dot-run',txt:aiOn?'AI live':'analyzer-only',sub:note,at:ins.updated,auto:ins.autopilot};
+}
+function aiCard(e){const a=aiEngStatus(e);
+  return `<div class="glass card" style="text-align:left">
+    <div class="k">${e.toUpperCase()} · brain</div>
+    <div style="font-size:14px;font-weight:800;margin-top:6px"><span class="statusdot ${a.dot}"></span>${a.txt}${a.auto?' · autopilot':''}</div>
+    <div class="mut" style="font-size:11px;margin-top:5px;line-height:1.4">${a.sub||''}${a.at?(' · '+String(a.at).slice(11,16)):''}</div></div>`;
+}
+function syncAiStatus(){const box=document.getElementById('aiStatus');if(!box)return;box.innerHTML=ENGINES.map(aiCard).join('');}
 function ctlStyle(){const m=cryptoStyle();
   const opts=[['spot','Spot'],['futures','Futures'],['both','Both']];
   return `<div class="glass ctl"><div class="cl">Crypto style <span class="cln">spot / futures</span></div>
@@ -413,10 +438,14 @@ function engPanel(e){
     <p class="mut" id="efoot_${e}" style="font-size:11px;margin:12px 0 0"></p></div>`;
 }
 function vCommand(){
-  return `<div class="deck">${ctlMarkets()}${ctlStyle()}${ctlRisk()}${ctlTarget()}${ctlAI()}</div>
+  return `${ctlMarketsBar()}
     <div class="cards" id="combo" style="margin:16px 0 6px"></div>
     <h2>Engines</h2>
-    <div class="engine-grid">${ENGINES.map(engPanel).join('')}</div>`;
+    <div class="engine-grid">${ENGINES.map(engPanel).join('')}</div>
+    <h2>AI copilot — live status</h2>
+    <div class="cards" id="aiStatus"></div>
+    <h2>Controls <span class="mut" style="text-transform:none;letter-spacing:0">— set it and leave it</span></h2>
+    <div class="deck">${ctlStyle()}${ctlRisk()}${ctlTarget()}${ctlAI()}</div>`;
 }
 function syncEngine(e){
   const S=E[e].S, el=id=>document.getElementById(id); if(!el('orb_'+e))return;
@@ -445,6 +474,7 @@ function syncCommand(){
     card('Combined today',`<span class="${usd>=0?'pos':'neg'}">${money(usd)}</span>`)+
     card('Open positions',openN)+card('Engines live',liveN+' / 4')+card('Closed trades',T.length);
   ENGINES.forEach(syncEngine);
+  syncAiStatus();
 }
 
 /* ---------- TRADES ---------- */
