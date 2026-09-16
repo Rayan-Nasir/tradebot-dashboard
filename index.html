@@ -332,6 +332,14 @@ function cryptoStyle(){const f=engRunning('futures'),s=engRunning('spot');if(f&&
 async function setCryptoStyle(m){await setCtrl(ROW.futures,m==='futures'||m==='both');await setCtrl(ROW.spot,m==='spot'||m==='both');await fetchConfigs();build();}
 async function stopAll(){if(!confirm('STOP every engine and CLOSE all open positions now?'))return;
   for(const id of ALLIDS){await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',id);}}
+async function closePos(e,sym){
+  if(!confirm(`Close ${sym} on the ${e} engine now, at market?`))return;
+  const cur=E[e].C.control||'run';
+  const restore=(cur==='pause'||cur==='stop')?cur:'run';   // don't change whether the engine keeps running
+  await sb.from('bot_config').update({control:`close:${sym}|${restore}`,updated_at:new Date().toISOString()}).eq('id',ROW[e]);
+  const btns=document.querySelectorAll(`#topen button`); btns.forEach(b=>{if(b.textContent==='Close'){b.textContent='closing…';b.disabled=true;}});
+  await fetchConfigs();
+}
 async function bumpCfg(id,patch){const {data}=await sb.from('bot_config').select('revision').eq('id',id).single();
   const rev=((data&&data.revision)||0)+1;
   return sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',id);}
@@ -515,9 +523,10 @@ function syncTrades(){
     const u=o.unreal_pct||0;const c=u>=0?'pos':'neg';
     openRows+=`<tr><td><span class="chip">${e}</span></td><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
       <td>${fmt(o.entry)}</td><td>${o.stop?fmt(o.stop):'—'}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
-      <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td></tr>`;});});
+      <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td>
+      <td><button class="mini danger" onclick="closePos('${e}','${s}')">Close</button></td></tr>`;});});
   el('topen').innerHTML=openRows?`<div class="glass panel tblwrap"><table>
-    <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
+    <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th><th>Action</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>';
   const D=trByEng();
   const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
