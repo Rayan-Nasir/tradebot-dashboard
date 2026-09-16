@@ -6,7 +6,6 @@
 <title>Treo</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
-/* Treo — hi-fi trading HUD. Committed dark cockpit theme. */
 :root{
   --bg:#04060c; --bg2:#070b14;
   --panel:rgba(16,24,40,.62); --panel-2:rgba(22,32,52,.5); --panel-3:rgba(30,42,66,.4);
@@ -45,8 +44,6 @@ h2::before{content:"";width:16px;height:2px;border-radius:2px;background:linear-
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .spacer{flex:1}
 .pos{color:var(--good-ink)} .neg{color:var(--bad-ink)} .mut{color:var(--muted)}
-
-/* ---------- APP BAR ---------- */
 .appbar{position:sticky;top:0;z-index:30;
   background:linear-gradient(180deg,rgba(6,10,20,.92),rgba(6,10,20,.6));
   border-bottom:1px solid var(--line);backdrop-filter:blur(16px) saturate(1.3)}
@@ -70,7 +67,6 @@ h2::before{content:"";width:16px;height:2px;border-radius:2px;background:linear-
 .dot-run{background:var(--good);box-shadow:0 0 9px var(--good);animation:blip 1.5s infinite}
 .dot-pause{background:var(--warn);box-shadow:0 0 9px var(--warn)}
 .dot-halt{background:var(--bad);box-shadow:0 0 9px var(--bad);animation:blip 1.1s infinite}
-
 button{font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--line-2);
   background:linear-gradient(180deg,rgba(34,48,74,.55),rgba(24,36,58,.5));color:var(--ink);
   padding:8px 14px;border-radius:11px;transition:.16s ease;letter-spacing:.02em}
@@ -91,16 +87,12 @@ input,select{font:inherit;color:var(--ink);background:rgba(8,14,24,.72);border:1
   border-radius:10px;padding:9px 11px;width:100%;transition:.15s}
 input:focus,select:focus{outline:none;border-color:var(--glow);box-shadow:0 0 0 3px rgba(60,224,255,.16)}
 select{cursor:pointer}
-
-/* ---------- TABS ---------- */
 .tabs{display:flex;gap:5px;margin-top:13px;flex-wrap:wrap}
 .tab{padding:9px 18px;border-radius:11px;font-weight:600;font-size:13px;color:var(--ink-2);cursor:pointer;
   letter-spacing:.03em;border:1px solid transparent;transition:.16s;position:relative}
 .tab:hover{background:rgba(60,224,255,.07);color:var(--ink)}
 .tab.active{color:#04121b;font-weight:700;border-color:transparent;
   background:linear-gradient(100deg,var(--glow-2),var(--glow));box-shadow:0 4px 16px rgba(60,224,255,.32)}
-
-/* ---------- GLASS / CARDS ---------- */
 .glass{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
   border-radius:var(--r);backdrop-filter:blur(12px) saturate(1.2);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.04)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:13px}
@@ -110,58 +102,9 @@ select{cursor:pointer}
 .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:600}
 .card .v{font-size:24px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .panel{padding:18px}
-
-/* ---------- ARC REACTOR HUD ---------- */
-.hud{display:grid;grid-template-columns:1fr;place-items:center;padding:30px 0 6px}
-.reactor{position:relative;width:308px;height:308px;filter:drop-shadow(0 0 38px rgba(60,224,255,.4))}
-.reactor .ring{position:absolute;border-radius:50%}
-.r-tick{inset:0;border:1px dashed rgba(120,200,255,.28);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 26px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 26px));animation:spin 28s linear infinite}
-.r-sweep{inset:18px;background:conic-gradient(from 0deg,transparent 0 55%,rgba(60,224,255,.5) 78%,var(--glow) 90%,transparent 100%);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 10px),#000 calc(100% - 10px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 10px),#000 calc(100% - 10px));animation:spin 3.2s linear infinite}
-.r-sweep.rev{inset:40px;background:conic-gradient(from 180deg,transparent 0 60%,rgba(139,108,255,.5) 82%,var(--violet-2) 92%,transparent 100%);
-  animation:spin 5.6s linear infinite reverse;opacity:.7}
-.r-inner{inset:66px;border:1px solid rgba(120,200,255,.36);box-shadow:0 0 26px rgba(60,224,255,.28) inset}
-@keyframes spin{to{transform:rotate(360deg)}}
-.core{position:absolute;inset:82px;border-radius:50%;display:grid;place-items:center;text-align:center;
-  background:radial-gradient(circle at 50% 40%, rgba(60,224,255,.38), rgba(8,18,34,.92) 70%);
-  box-shadow:0 0 46px rgba(60,224,255,.42) inset, 0 0 30px rgba(60,224,255,.32);animation:breathe 3.6s ease-in-out infinite}
-@keyframes breathe{0%,100%{box-shadow:0 0 44px rgba(60,224,255,.36) inset,0 0 22px rgba(60,224,255,.26)}
-  50%{box-shadow:0 0 66px rgba(60,224,255,.62) inset,0 0 38px rgba(60,224,255,.48)}}
-.core.long{background:radial-gradient(circle at 50% 40%, rgba(38,230,164,.42), rgba(6,26,20,.92) 70%);
-  box-shadow:0 0 64px rgba(38,230,164,.55) inset,0 0 38px rgba(38,230,164,.5)}
-.core.short{background:radial-gradient(circle at 50% 40%, rgba(255,93,114,.42), rgba(30,8,14,.92) 70%);
-  box-shadow:0 0 64px rgba(255,93,114,.5) inset,0 0 38px rgba(255,93,114,.45)}
-.core.halt{background:radial-gradient(circle at 50% 40%, rgba(255,206,90,.32), rgba(30,24,8,.92) 70%)}
-.tag{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.04em}
-.tag.long{background:rgba(38,230,164,.18);color:var(--good-ink)} .tag.short{background:rgba(255,93,114,.18);color:var(--bad-ink)}
-.core-state{font-family:'Orbitron';font-weight:800;letter-spacing:3px;font-size:21px}
-.core-sub{font-size:11px;color:var(--ink-2);margin-top:4px;letter-spacing:.06em;max-width:150px}
-.notice{margin-top:8px;text-align:center;color:var(--ink-2);font-size:13px;min-height:1.4em}
-.notice b{color:var(--glow)}
-
-.sats{display:flex;gap:11px;justify-content:center;flex-wrap:wrap;margin-top:16px}
-.sat{min-width:122px;padding:11px 13px;border-radius:14px;border:1px solid var(--line);
-  background:linear-gradient(180deg,var(--panel-2),var(--panel-3));text-align:center;transition:.18s;backdrop-filter:blur(6px)}
-.sat:hover{transform:translateY(-2px);border-color:var(--line-2)}
-.sat.long{border-color:rgba(38,230,164,.55);box-shadow:0 0 18px rgba(38,230,164,.28)}
-.sat.short{border-color:rgba(255,93,114,.55);box-shadow:0 0 18px rgba(255,93,114,.28)}
-.sat .s{font-weight:700;font-size:13px}
-.sat .p{font-family:'JetBrains Mono';color:var(--ink-2);font-size:12px;margin-top:3px}
-.dots{display:flex;gap:4px;justify-content:center;margin-top:7px}
-.d{width:7px;height:7px;border-radius:50%;background:rgba(120,150,190,.3)}
-.d.on{background:var(--good);box-shadow:0 0 7px var(--good)}
-.ticker{margin-top:10px;padding:10px 15px;border-radius:13px;border:1px solid var(--line);
-  background:linear-gradient(180deg,var(--panel-2),var(--panel-3));font-size:12.5px;color:var(--ink-2);display:flex;gap:10px;align-items:center}
-.ticker .fdot{width:7px;height:7px;border-radius:50%;background:var(--glow);box-shadow:0 0 8px var(--glow);flex:none}
-
-/* ---------- TABLES ---------- */
 table{width:100%;border-collapse:collapse}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:13px;font-variant-numeric:tabular-nums}
 tr:last-child td{border-bottom:none}
-tbody tr,table tr{transition:background .12s}
 td{color:var(--ink)}
 th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 .tblwrap{overflow-x:auto;border-radius:var(--r)}
@@ -173,86 +116,77 @@ th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.
 .chip.ok{background:rgba(38,230,164,.16);color:var(--good-ink)}
 .field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:500}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:13px}
-.filterbar{display:flex;gap:6px;margin-bottom:12px}
+.filterbar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 #login{max-width:400px;margin:13vh auto;text-align:center}
 #login .panel{padding:32px}
 .hint{color:var(--muted);font-size:12px;margin-top:12px;line-height:1.6}
 .saved{color:var(--good-ink);font-size:13px}
-.feed{max-height:320px;overflow-y:auto;padding:4px}
-.feed::-webkit-scrollbar{width:8px}.feed::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px}
-.frow{display:flex;gap:11px;padding:7px 9px;border-bottom:1px solid var(--line);font-size:12px;align-items:baseline}
-.frow:last-child{border-bottom:none}
-.ftime{color:var(--muted);font-size:11px;white-space:nowrap;font-family:'JetBrains Mono'}
-.fsym{font-weight:700;min-width:74px}
-.ftxt{color:var(--ink-2);flex:1}
+.sats{display:flex;gap:11px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.sat{min-width:112px;padding:11px 13px;border-radius:14px;border:1px solid var(--line);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel-3));text-align:center;transition:.18s;backdrop-filter:blur(6px)}
+.sat:hover{transform:translateY(-2px);border-color:var(--line-2)}
+.sat .s{font-weight:700;font-size:13px}
+.sat .p{font-family:'JetBrains Mono';color:var(--ink-2);font-size:12px;margin-top:3px}
+.tag{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.04em}
+.tag.long{background:rgba(38,230,164,.18);color:var(--good-ink)} .tag.short{background:rgba(255,93,114,.18);color:var(--bad-ink)}
+@keyframes breathe{0%,100%{box-shadow:0 0 44px rgba(60,224,255,.36) inset,0 0 22px rgba(60,224,255,.26)}
+  50%{box-shadow:0 0 66px rgba(60,224,255,.62) inset,0 0 38px rgba(60,224,255,.48)}}
 canvas{max-width:100%}
 ::selection{background:rgba(60,224,255,.3);color:#fff}
-</style>
-<style>
-  /* two-engine additions */
-  .mode-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:rgba(10,16,26,.5)}
-  .mode-seg button{border:none;border-radius:0;background:transparent;padding:7px 15px;font-size:12px;font-weight:700;letter-spacing:.03em;box-shadow:none}
-  .mode-seg button:hover{transform:none;box-shadow:none;color:var(--glow)}
-  .mode-seg button.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b}
-  .mode-seg button:disabled{color:var(--muted);opacity:.5}
-  .mode-seg button:disabled:hover{color:var(--muted)}
-  .engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:840px){.engine-grid{grid-template-columns:1fr}}
-  .eng{padding:18px;position:relative;transition:.25s}
-  .eng.off{opacity:.38;filter:grayscale(.5)}
-  .eng.soon{opacity:.55}
-  .eng .ehead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  .eng .ename{font-family:'Orbitron';font-weight:700;letter-spacing:2px;font-size:14px}
-  .orb{width:118px;height:118px;border-radius:50%;margin:6px auto 12px;display:grid;place-items:center;text-align:center;
-    background:radial-gradient(circle at 50% 40%,rgba(60,224,255,.34),rgba(8,18,34,.9) 70%);
-    box-shadow:0 0 34px rgba(60,224,255,.34) inset,0 0 20px rgba(60,224,255,.26);animation:breathe 3.6s ease-in-out infinite}
-  .orb.long{background:radial-gradient(circle at 50% 40%,rgba(38,230,164,.42),rgba(6,26,20,.92) 70%);box-shadow:0 0 42px rgba(38,230,164,.5) inset}
-  .orb.short{background:radial-gradient(circle at 50% 40%,rgba(255,93,114,.42),rgba(30,8,14,.92) 70%);box-shadow:0 0 42px rgba(255,93,114,.5) inset}
-  .orb.halt{background:radial-gradient(circle at 50% 40%,rgba(255,206,90,.3),rgba(30,24,8,.9) 70%)}
-  .orb.dim{animation:none;background:radial-gradient(circle at 50% 40%,rgba(97,120,158,.2),rgba(8,14,24,.9) 70%);box-shadow:0 0 20px rgba(97,120,158,.2) inset}
-  .orb .os{font-family:'Orbitron';font-weight:800;font-size:14px;letter-spacing:1px}
-  .orb .osub{font-size:10px;color:var(--ink-2);margin-top:3px}
-  .ekpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
-  .ekpi .k{color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em}
-  .ekpi .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
-  .modal-bg{position:fixed;inset:0;background:rgba(2,6,14,.74);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:100;padding:20px}
-  .modal{max-width:500px;width:100%;padding:24px}
-  .modal h3{margin:0 0 4px;font-size:17px}
-  .warn-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5}
-  .warn-item:last-child{border-bottom:none}
-  .warn-ic{color:var(--warn);flex:none;font-size:15px}
-  .colwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:900px){.colwrap{grid-template-columns:1fr}}
-
-  /* ---------- CONTROL DECK (plain-English Command controls) ---------- */
-  .deck{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:13px;margin:22px 0 6px}
-  .ctl{padding:16px 18px;display:flex;flex-direction:column}
-  .ctl .cl{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:8px}
-  .ctl .cl .cln{color:var(--ink-2);text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
-  .ctl .cfoot{color:var(--muted);font-size:11px;margin:11px 0 0;line-height:1.5}
-  .chips{display:flex;gap:7px;flex-wrap:wrap}
-  .chipbtn{padding:8px 13px;border-radius:11px;border:1px solid var(--line-2);background:rgba(10,16,26,.5);
-    font-weight:700;font-size:12.5px;color:var(--ink-2);cursor:pointer;transition:.16s;display:inline-flex;align-items:center;gap:7px}
-  .chipbtn:hover{border-color:var(--glow);color:var(--ink);box-shadow:0 0 14px rgba(60,224,255,.2)}
-  .chipbtn.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b;border-color:transparent;box-shadow:0 3px 14px rgba(60,224,255,.28)}
-  .chipbtn.soon{opacity:.5;cursor:not-allowed}
-  .chipbtn.soon:hover{border-color:var(--line-2);color:var(--ink-2);box-shadow:none}
-  .chipbtn .mi{font-size:14px}
-  .soonpill{font-size:8.5px;font-weight:800;letter-spacing:.06em;padding:2px 6px;border-radius:5px;background:rgba(255,206,90,.16);color:var(--warn)}
-  .aitog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
-  .aitog:last-child{border-bottom:none}
-  .aitog .lbl{font-size:13px;font-weight:600}
-  .aitog .sub{font-size:11px;color:var(--muted);margin-top:2px;max-width:210px}
-  .sw{width:46px;height:26px;border-radius:20px;background:rgba(80,100,130,.32);position:relative;cursor:pointer;transition:.2s;flex:none;border:1px solid var(--line-2)}
-  .sw::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#dfeaff;transition:.2s}
-  .sw.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));border-color:transparent}
-  .sw.on::after{left:23px}
-  .sw.violet.on{background:linear-gradient(100deg,var(--violet),var(--violet-2))}
+/* control deck */
+.deck{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:13px;margin:22px 0 6px}
+.ctl{padding:16px 18px;display:flex;flex-direction:column}
+.ctl .cl{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.ctl .cl .cln{color:var(--ink-2);text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
+.ctl .cfoot{color:var(--muted);font-size:11px;margin:11px 0 0;line-height:1.5}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chipbtn{padding:8px 13px;border-radius:11px;border:1px solid var(--line-2);background:rgba(10,16,26,.5);
+  font-weight:700;font-size:12.5px;color:var(--ink-2);cursor:pointer;transition:.16s;display:inline-flex;align-items:center;gap:7px}
+.chipbtn:hover{border-color:var(--glow);color:var(--ink);box-shadow:0 0 14px rgba(60,224,255,.2)}
+.chipbtn.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b;border-color:transparent;box-shadow:0 3px 14px rgba(60,224,255,.28)}
+.chipbtn .mi{font-size:14px}
+.aitog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.aitog:last-child{border-bottom:none}
+.aitog .lbl{font-size:13px;font-weight:600}
+.aitog .sub{font-size:11px;color:var(--muted);margin-top:2px;max-width:210px}
+.sw{width:46px;height:26px;border-radius:20px;background:rgba(80,100,130,.32);position:relative;cursor:pointer;transition:.2s;flex:none;border:1px solid var(--line-2)}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#dfeaff;transition:.2s}
+.sw.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));border-color:transparent}
+.sw.on::after{left:23px}
+.sw.violet.on{background:linear-gradient(100deg,var(--violet),var(--violet-2))}
+.mode-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:rgba(10,16,26,.5)}
+.mode-seg button{border:none;border-radius:0;background:transparent;padding:7px 15px;font-size:12px;font-weight:700;letter-spacing:.03em;box-shadow:none}
+.mode-seg button:hover{transform:none;box-shadow:none;color:var(--glow)}
+.mode-seg button.on{background:linear-gradient(100deg,var(--glow-2),var(--glow));color:#04121b}
+.mode-seg button:disabled{color:var(--muted);opacity:.5}
+.engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:840px){.engine-grid{grid-template-columns:1fr}}
+.eng{padding:18px;position:relative;transition:.25s}
+.eng.off{opacity:.42;filter:grayscale(.5)}
+.eng .ehead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.eng .ename{font-family:'Orbitron';font-weight:700;letter-spacing:2px;font-size:14px}
+.eng .emkt{font-size:10px;color:var(--muted);letter-spacing:.06em}
+.orb{width:104px;height:104px;border-radius:50%;margin:6px auto 12px;display:grid;place-items:center;text-align:center;
+  background:radial-gradient(circle at 50% 40%,rgba(60,224,255,.34),rgba(8,18,34,.9) 70%);
+  box-shadow:0 0 34px rgba(60,224,255,.34) inset,0 0 20px rgba(60,224,255,.26);animation:breathe 3.6s ease-in-out infinite}
+.orb.long{background:radial-gradient(circle at 50% 40%,rgba(38,230,164,.42),rgba(6,26,20,.92) 70%);box-shadow:0 0 42px rgba(38,230,164,.5) inset}
+.orb.short{background:radial-gradient(circle at 50% 40%,rgba(255,93,114,.42),rgba(30,8,14,.92) 70%);box-shadow:0 0 42px rgba(255,93,114,.5) inset}
+.orb.halt{background:radial-gradient(circle at 50% 40%,rgba(255,206,90,.3),rgba(30,24,8,.9) 70%)}
+.orb .os{font-family:'Orbitron';font-weight:800;font-size:13px;letter-spacing:1px}
+.orb .osub{font-size:10px;color:var(--ink-2);margin-top:3px}
+.ekpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+.ekpi .k{color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em}
+.ekpi .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.modal-bg{position:fixed;inset:0;background:rgba(2,6,14,.74);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:100;padding:20px}
+.modal{max-width:500px;width:100%;padding:24px}
+.modal h3{margin:0 0 4px;font-size:17px}
+.warn-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5}
+.warn-item:last-child{border-bottom:none}
+.warn-ic{color:var(--warn);flex:none;font-size:15px}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login" hidden>
   <div class="glass panel">
     <div class="brand" style="justify-content:center"><span class="spark"></span><span class="mark">TREO</span></div>
@@ -266,13 +200,11 @@ canvas{max-width:100%}
   </div>
 </div>
 
-<!-- APP -->
 <div id="app" hidden>
   <div class="appbar"><div class="inner row">
     <div class="brand"><span class="spark"></span><span class="mark">TREO</span></div>
-    <span class="badge b-mode" id="envBadge">STAGING · TESTNET</span>
-    <span class="mode-seg" id="modeSeg"></span>
-    <span id="modeNote" class="mut" style="font-size:12px"></span>
+    <span class="badge b-mode" id="envBadge">STAGING · DEMO</span>
+    <span id="liveNote" class="mut" style="font-size:12px"></span>
     <span class="spacer"></span>
     <button class="mini danger" onclick="stopAll()">■ Stop &amp; Close All</button>
     <button class="mini ghost" onclick="signOut()">Exit</button>
@@ -290,79 +222,69 @@ canvas{max-width:100%}
 const cfg=window.APP_CONFIG;
 const sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
 const TABS=["Command","Trades","Markets","Settings"];
-const ROW={futures:1,spot:2};
+const ENGINES=["spot","futures","forex","stocks"];       // display order
+const ROW={futures:1,spot:2,forex:3,stocks:4};
+const ID2ENG={1:"futures",2:"spot",3:"forex",4:"stocks"};
+const ALLIDS=[1,2,3,4];
+const OWNERSHIP=new Set(["spot","stocks"]);              // long-only, hold-to-profit
+const MKT={crypto:{label:"Crypto",icon:"₿",engines:["spot","futures"]},
+           forex:{label:"Forex",icon:"💱",engines:["forex"]},
+           stocks:{label:"US Stocks",icon:"📈",engines:["stocks"]}};
+const ENG_MKT={spot:"crypto · Binance",futures:"crypto · Binance",forex:"forex · Capital.com",stocks:"stocks · Alpaca"};
 let active="Command";
-let E={futures:{S:{},C:{data:{},control:'run',revision:0}},spot:{S:{},C:{data:{},control:'run',revision:0}}};
-let T=[], pnlChart, wlChart, lastTLen=-1;
-let engView='futures';   // which engine's advanced settings are shown
+let E={futures:mk(),spot:mk(),forex:mk(),stocks:mk()};
+function mk(){return {S:{},C:{data:{},control:'run',revision:0}};}
+let T=[], pnlChart, wlChart, lastTLen=-1, engView='futures';
 
-const DEFAULTS={symbols:'BTC/USDT, ETH/USDT, SOL/USDT, BNB/USDT, XRP/USDT',timeframe:'15m',poll_seconds:20,
-  leverage:1,allow_long:true,allow_short:true,score_threshold:3,atr_mult:1.5,min_stop_pct:0.6,trend_ema:200,adx_min:22,
-  use_sr:true,sr_lookback:120,sr_pivot_bars:3,sr_near_atr:1.5,sr_min_room_r:1.0,use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
-  rsi_overbought:78,rsi_oversold:22,use_stop_loss:true,use_exchange_stop:true,breakeven_at_r:1.5,trail_atr_mult:2.5,cooldown_minutes:15,
-  risk_per_trade_pct:1,reward_risk:2,max_open_positions:8,daily_loss_limit_pct:0,daily_profit_target_pct:0,
-  daily_profit_target_usd:0,daily_loss_limit_usd:0,ema_fast:9,ema_slow:21,rsi_period:14,adx_period:14,atr_period:14,
-  min_notional_usdt:11,fee_pct:0.09};
+const DEFAULTS={symbols:'',timeframe:'1m',poll_seconds:10,leverage:1,allow_long:true,allow_short:true,
+  score_threshold:3,atr_mult:1.5,min_stop_pct:0.6,trend_ema:200,adx_min:22,use_sr:true,sr_lookback:120,
+  sr_pivot_bars:3,sr_near_atr:1.5,sr_min_room_r:1.0,use_fng:true,fng_extreme_greed:78,fng_extreme_fear:22,
+  rsi_overbought:78,rsi_oversold:22,use_stop_loss:true,use_exchange_stop:true,breakeven_at_r:1.5,trail_atr_mult:2.5,
+  cooldown_minutes:15,risk_per_trade_pct:1,reward_risk:2,max_open_positions:6,daily_loss_limit_pct:0,
+  daily_profit_target_pct:0,daily_profit_target_usd:0,daily_loss_limit_usd:0,ema_fast:9,ema_slow:21,rsi_period:14,
+  adx_period:14,atr_period:14,min_notional_usdt:11,fee_pct:0.09};
 
-const LABELS={symbols:"Pairs (comma separated)",timeframe:"Candle timeframe",poll_seconds:"Check every (seconds)",
-  leverage:"Leverage (×)",allow_long:"Allow longs",allow_short:"Allow shorts",score_threshold:"Votes needed (2–4)",
-  atr_mult:"Target/stop = ATR ×",min_stop_pct:"Min width (%)",trend_ema:"Trend-context EMA (0=off)",adx_min:"Min trend strength ADX (0=off)",
-  rsi_overbought:"RSI overbought",rsi_oversold:"RSI oversold",use_sr:"Only enter near a level (S/R)",sr_lookback:"S/R lookback (candles)",
+const LABELS={symbols:"Instruments (comma separated)",score_threshold:"Votes needed (2–4)",atr_mult:"Target/stop = ATR ×",
+  min_stop_pct:"Min width (%)",trend_ema:"Trend-context EMA (0=off)",adx_min:"Min trend strength ADX (0=off)",
+  rsi_overbought:"RSI overbought",rsi_oversold:"RSI oversold",use_sr:"Only enter near a level (S/R)",sr_lookback:"S/R lookback",
   sr_pivot_bars:"S/R pivot strength",sr_near_atr:"“Near a level” = ATR ×",sr_min_room_r:"Min room to opposite level (R)",
   use_fng:"Use Fear & Greed filter",fng_extreme_greed:"Block longs above F&G",fng_extreme_fear:"Block shorts below F&G",
   use_stop_loss:"Use stop-loss",use_exchange_stop:"Stop lives on exchange",breakeven_at_r:"Break-even at R (0=off)",
   trail_atr_mult:"Trail stop = ATR × (0=off)",cooldown_minutes:"Cooldown after loss (min)",risk_per_trade_pct:"Risk per trade (%)",
-  ride_trends:"Ride strong trends (let winners run)",trend_adx_ride:"Ride when ADX ≥",trail_profit_pct:"Lock profit on pullback (%)",
-  autopilot:"Autopilot (auto-loosen if idle)",autopilot_idle_min:"Autopilot: idle mins before loosening",
-  auto_universe:"Scan all top coins (auto-universe)",universe_size:"How many top coins to scan",
-  reward_risk:"Take-profit = risk ×",max_open_positions:"Max open positions",min_notional_usdt:"Min trade size (USDT)",
-  fee_pct:"Fee per trade (%)",daily_profit_target_usd:"Daily profit target (USDT, 0=off)",daily_loss_limit_usd:"Daily loss limit (USDT, 0=off)",
-  daily_profit_target_pct:"…or profit target (%)",daily_loss_limit_pct:"…or loss limit (%)",
-  ema_fast:"EMA fast",ema_slow:"EMA slow",rsi_period:"RSI period",adx_period:"ADX period",atr_period:"ATR period"};
+  reward_risk:"Take-profit = risk ×",max_open_positions:"Max open positions",min_notional_usdt:"Min trade size",
+  fee_pct:"Fee per trade (%)",daily_profit_target_usd:"Daily profit target (0=off)",daily_loss_limit_usd:"Daily loss limit (0=off)",
+  daily_profit_target_pct:"…or profit target (%)",daily_loss_limit_pct:"…or loss limit (%)",ema_fast:"EMA fast",ema_slow:"EMA slow",
+  rsi_period:"RSI period",adx_period:"ADX period",atr_period:"ATR period",leverage:"Leverage (×)"};
+const BOOL=new Set(["use_sr","use_fng","use_stop_loss","use_exchange_stop"]);
 
-const BOOL=new Set(["allow_long","allow_short","use_sr","use_fng","use_stop_loss","use_exchange_stop","ride_trends","autopilot","auto_universe"]);
-
-// FUTURES settings — full control
-const FUT_GROUPS=[
-  ["Trading",["symbols","timeframe","poll_seconds","leverage","allow_long","allow_short"]],
+const POSITION_GROUPS=[
+  ["Instruments",["symbols"]],
   ["Daily goals",["daily_profit_target_usd","daily_loss_limit_usd","daily_profit_target_pct","daily_loss_limit_pct"]],
   ["Signal engine",["score_threshold","atr_mult","min_stop_pct","trend_ema","adx_min","rsi_overbought","rsi_oversold","ema_fast","ema_slow","rsi_period","adx_period","atr_period"]],
   ["Support / resistance",["use_sr","sr_lookback","sr_pivot_bars","sr_near_atr","sr_min_room_r"]],
-  ["Market sentiment",["use_fng","fng_extreme_greed","fng_extreme_fear"]],
-  ["Exits — ride trends / scalp ranges",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Trade management",["use_stop_loss","use_exchange_stop","breakeven_at_r","trail_atr_mult","cooldown_minutes"]],
   ["Risk & size",["risk_per_trade_pct","reward_risk","max_open_positions","min_notional_usdt","fee_pct"]],
-  ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
 ];
-// SPOT settings — lean, long-only accumulator, no stop / leverage / short / daily-loss
-const SPOT_GROUPS=[
-  ["Trading",["symbols","timeframe","poll_seconds"]],
+const OWNERSHIP_GROUPS=[
+  ["Instruments",["symbols"]],
   ["Buy the dip (entry)",["score_threshold","use_sr","sr_near_atr","sr_min_room_r","trend_ema","adx_min","rsi_oversold"]],
-  ["Exits — hold winners, scalp ranges (never sells at a loss)",["ride_trends","trend_adx_ride","trail_profit_pct"]],
   ["Take profit & size",["reward_risk","risk_per_trade_pct","max_open_positions","min_notional_usdt","cooldown_minutes","fee_pct"]],
-  ["Market sentiment",["use_fng","fng_extreme_greed"]],
-  ["Autonomy",["auto_universe","universe_size","autopilot","autopilot_idle_min"]],
 ];
+function groupsFor(e){return OWNERSHIP.has(e)?OWNERSHIP_GROUPS:POSITION_GROUPS;}
 
-// ---------- MARKETS (crypto live; forex + stocks staged, unlock on adapter+account) ----------
-const MARKETS=[
-  {k:'crypto',label:'Crypto',icon:'₿',live:true},
-  {k:'forex',label:'Forex',icon:'💱',live:false,note:'OANDA demo'},
-  {k:'stocks',label:'US Stocks',icon:'📈',live:false,note:'Alpaca paper'},
-];
-
-// ---------- RISK APPETITE presets (plain-English → advanced dials) ----------
 const RISK={
-  safe:{fut:{score_threshold:4,risk_per_trade_pct:0.75,leverage:1,reward_risk:2.0,max_open_positions:4,adx_min:25,use_stop_loss:true,use_exchange_stop:true},
-        spot:{score_threshold:4,risk_per_trade_pct:0.75,reward_risk:2.0,max_open_positions:3,use_sr:true}},
-  balanced:{fut:{score_threshold:3,risk_per_trade_pct:1.5,leverage:2,reward_risk:2.0,max_open_positions:8,adx_min:22,use_stop_loss:true,use_exchange_stop:true},
-        spot:{score_threshold:3,risk_per_trade_pct:1.5,reward_risk:2.0,max_open_positions:6,use_sr:true}},
-  aggressive:{fut:{score_threshold:2,risk_per_trade_pct:2.5,leverage:3,reward_risk:1.8,max_open_positions:12,adx_min:15,use_stop_loss:true,use_exchange_stop:true},
-        spot:{score_threshold:2,risk_per_trade_pct:2.5,reward_risk:1.8,max_open_positions:8,use_sr:true}},
+  safe:{pos:{score_threshold:4,risk_per_trade_pct:0.75,leverage:1,reward_risk:2.0,max_open_positions:4,adx_min:25},
+        own:{score_threshold:4,risk_per_trade_pct:0.75,reward_risk:2.0,max_open_positions:3}},
+  balanced:{pos:{score_threshold:3,risk_per_trade_pct:1.5,leverage:2,reward_risk:2.0,max_open_positions:8,adx_min:22},
+        own:{score_threshold:3,risk_per_trade_pct:1.5,reward_risk:2.0,max_open_positions:6}},
+  aggressive:{pos:{score_threshold:2,risk_per_trade_pct:2.5,leverage:3,reward_risk:1.8,max_open_positions:12,adx_min:15},
+        own:{score_threshold:2,risk_per_trade_pct:2.5,reward_risk:1.8,max_open_positions:8}},
 };
 
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function fmt(n){return n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:8})}
+function money(n){const v=+n||0;return (v>=0?'+$':'−$')+Math.abs(v).toFixed(2);}
+function card(k,v){return `<div class="glass card"><div class="k">${k}</div><div class="v">${v}</div></div>`}
 
 async function signIn(){const email=email_.value.trim(),password=password_.value;
   if(!email||!password){loginMsg.textContent="Enter your email and password.";return;}
@@ -385,131 +307,102 @@ async function showApp(){
 }
 function go(t){active=t;document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.textContent===t));build();}
 
-async function fetchState(){const {data}=await sb.from('bot_state').select('id,data').in('id',[1,2]);
-  (data||[]).forEach(r=>{E[r.id===2?'spot':'futures'].S=(r&&r.data)||{};});}
-async function fetchConfigs(){const {data}=await sb.from('bot_config').select('id,data,control,revision').in('id',[1,2]);
-  (data||[]).forEach(r=>{E[r.id===2?'spot':'futures'].C={data:r.data||{},control:r.control||'run',revision:r.revision||0};});}
+async function fetchState(){const {data}=await sb.from('bot_state').select('id,data').in('id',ALLIDS);
+  (data||[]).forEach(r=>{const e=ID2ENG[r.id];if(e)E[e].S=(r&&r.data)||{};});}
+async function fetchConfigs(){const {data}=await sb.from('bot_config').select('id,data,control,revision').in('id',ALLIDS);
+  (data||[]).forEach(r=>{const e=ID2ENG[r.id];if(e)E[e].C={data:r.data||{},control:r.control||'run',revision:r.revision||0};});}
 async function fetchTrades(){const {data}=await sb.from('trades').select('*').order('created_at',{ascending:true}).limit(2000);T=data||[];lastTLen=T.length;}
 
 function engRunning(e){const c=E[e].C.control;return c!=='pause'&&c!=='stop';}
-function currentMode(){const f=engRunning('futures'),s=engRunning('spot');
-  if(f&&s)return 'smart'; if(s)return 'spot'; if(f)return 'futures'; return 'paused';}
 function staleSecs(S){if(typeof S.updated_ts==='number')return Math.max(0,Math.round(Date.now()/1000-S.updated_ts));
   if(!S.updated)return null;const t=Date.parse(String(S.updated).replace(' ','T')+'Z');
   if(isNaN(t))return null;return Math.max(0,Math.round((Date.now()-t)/1000));}
-
-// engine status -> {txt, dot, cls, orb, sub}
 function engStatus(e){const S=E[e].S, on=engRunning(e), st=staleSecs(S);
-  if(st!=null&&st>120) return {txt:'OFFLINE?',dot:'dot-halt',cls:'b-off',orb:'halt',sub:'no data'};
-  if(!on) return {txt:'IDLE',dot:'dot-pause',cls:'b-pause',orb:'halt',sub:'not selected'};
+  if(st!=null&&st>180) return {txt:'OFFLINE?',dot:'dot-halt',cls:'b-off',orb:'halt',sub:'no data'};
+  if(!on) return {txt:'PAUSED',dot:'dot-pause',cls:'b-pause',orb:'halt',sub:'tap market to start'};
   if(S.halted) return {txt:'RESTING',dot:'dot-halt',cls:'b-halt',orb:'halt',sub:S.halt_reason||'daily goal'};
   const sig=S.signals||{}, hot=Object.keys(sig).find(k=>sig[k].signal);
   if(hot){const d=sig[hot].signal;return {txt:d.toUpperCase(),dot:'dot-run',cls:'b-run',orb:d,sub:hot};}
   return {txt:'SCANNING',dot:'dot-run',cls:'b-run',orb:'',sub:(Object.keys(sig).length||'')+' markets'};
 }
 
-function syncHeader(){
-  const m=currentMode();
-  modeSeg.innerHTML=[['spot','Spot'],['futures','Futures'],['smart','Both']].map(([k,l])=>
-    `<button class="${m===k?'on':''}" onclick="setMode('${k}')">${l}</button>`).join('');
-  const note=document.getElementById('modeNote');
-  const desc={spot:'spot only · long-only accumulator',futures:'futures only · long + short',
-    smart:'both engines live',paused:'both engines paused'}[m];
-  if(note)note.textContent=desc;
-}
-
-async function setMode(m){
-  const set=(id,ctrl)=>sb.from('bot_config').update({control:ctrl,updated_at:new Date().toISOString()}).eq('id',id);
-  await set(ROW.futures,(m==='futures'||m==='smart')?'run':'pause');
-  await set(ROW.spot,(m==='spot'||m==='smart')?'run':'pause');
-  await fetchConfigs(); build();
-}
-async function stopAll(){ if(!confirm('STOP both engines and CLOSE every open position now?'))return;
-  await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',ROW.futures);
-  await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',ROW.spot);}
-
-// shared: bump a config row's data + revision (does NOT touch control/mode)
+async function setCtrl(id,run){await sb.from('bot_config').update({control:run?'run':'pause',updated_at:new Date().toISOString()}).eq('id',id);}
+async function setMarket(mkt,on){for(const e of MKT[mkt].engines){await setCtrl(ROW[e],on);}await fetchConfigs();build();}
+function cryptoStyle(){const f=engRunning('futures'),s=engRunning('spot');if(f&&s)return'both';if(s)return'spot';if(f)return'futures';return'off';}
+async function setCryptoStyle(m){await setCtrl(ROW.futures,m==='futures'||m==='both');await setCtrl(ROW.spot,m==='spot'||m==='both');await fetchConfigs();build();}
+async function stopAll(){if(!confirm('STOP every engine and CLOSE all open positions now?'))return;
+  for(const id of ALLIDS){await sb.from('bot_config').update({control:'flatten',updated_at:new Date().toISOString()}).eq('id',id);}}
 async function bumpCfg(id,patch){const {data}=await sb.from('bot_config').select('revision').eq('id',id).single();
   const rev=((data&&data.revision)||0)+1;
   return sb.from('bot_config').update({data:patch,revision:rev,updated_at:new Date().toISOString()}).eq('id',id);}
 
 function build(){
-  syncHeader();
+  const anyLive=ENGINES.some(engRunning);
+  document.getElementById('liveNote').textContent=anyLive?'':'all engines paused';
   view.innerHTML=({Command:vCommand,Trades:vTrades,Markets:vMarkets,Settings:vSettings}[active])();
   if(active==='Command')syncCommand();
   if(active==='Trades'){drawPnl();drawWL();syncTrades();}
   if(active==='Markets')syncMarkets();
-  if(active==='Settings')fillSettings();
 }
 function live(){
-  syncHeader();
   if(active==='Settings')return;
   if(active==='Command'){syncCommand();return;}
   if(active==='Markets'){syncMarkets();return;}
   if(active==='Trades'){if(T.length!==lastTLen){lastTLen=T.length;drawPnl();drawWL();}syncTrades();}
 }
 
-/* ==========================================================================
-   COMMAND — plain-English control deck + combined KPIs + engine panels
-   ========================================================================== */
+/* ---------- COMMAND ---------- */
 function ctlMarkets(){
-  return `<div class="glass ctl"><div class="cl">Markets <span class="cln">what to trade</span></div>
-    <div class="chips">${MARKETS.map(m=>`<button class="chipbtn ${m.live?'on':'soon'}" ${m.live?'':'disabled'}
-      onclick="${m.live?'':''}"><span class="mi">${m.icon}</span>${m.label}${m.live?'':'<span class="soonpill">SOON</span>'}</button>`).join('')}</div>
-    <p class="cfoot">Crypto is live. Forex (OANDA) &amp; US Stocks (Alpaca) unlock once their demo accounts are connected.</p></div>`;
+  const st={crypto:engRunning('spot')||engRunning('futures'),forex:engRunning('forex'),stocks:engRunning('stocks')};
+  const chip=k=>`<button class="chipbtn ${st[k]?'on':''}" onclick="setMarket('${k}',${!st[k]})"><span class="mi">${MKT[k].icon}</span>${MKT[k].label}</button>`;
+  return `<div class="glass ctl"><div class="cl">Markets <span class="cln">tap to trade / pause</span></div>
+    <div class="chips">${chip('crypto')}${chip('forex')}${chip('stocks')}</div>
+    <p class="cfoot">Each market runs on its own demo account. Tap to start or pause it.</p></div>`;
 }
-function ctlStyle(){const m=currentMode();
-  const opts=[['spot','Spot'],['futures','Futures'],['smart','Both']];
-  const desc={spot:'Own coins, hold till profit — never sells at a loss.',futures:'Trade both directions, shorter-term, uses stops.',
-    smart:'Runs both engines; you just set the target.',paused:'Both engines paused — pick a style to start.'}[m];
-  return `<div class="glass ctl"><div class="cl">Trade style <span class="cln">how it plays</span></div>
-    <span class="mode-seg">${opts.map(([k,l])=>`<button class="${m===k?'on':''}" onclick="setMode('${k}')">${l}</button>`).join('')}</span>
-    <p class="cfoot">${desc}</p></div>`;
+function ctlStyle(){const m=cryptoStyle();
+  const opts=[['spot','Spot'],['futures','Futures'],['both','Both']];
+  return `<div class="glass ctl"><div class="cl">Crypto style <span class="cln">spot / futures</span></div>
+    <span class="mode-seg">${opts.map(([k,l])=>`<button class="${m===k?'on':''}" onclick="setCryptoStyle('${k}')">${l}</button>`).join('')}</span>
+    <p class="cfoot">Applies to the crypto engines. Forex trades long+short; stocks buys &amp; holds.</p></div>`;
 }
 function riskGuess(){const s=+(E.futures.C.data.score_threshold);if(!s)return null;return s>=4?'safe':(s<=2?'aggressive':'balanced');}
-function ctlRisk(){const cur=riskGuess();
-  const opts=[['safe','Safe'],['balanced','Balanced'],['aggressive','Aggressive']];
+function ctlRisk(){const cur=riskGuess();const opts=[['safe','Safe'],['balanced','Balanced'],['aggressive','Aggressive']];
   return `<div class="glass ctl"><div class="cl">Risk appetite <span class="cln">plain English</span></div>
     <span class="mode-seg">${opts.map(([k,l])=>`<button class="${cur===k?'on':''}" onclick="applyRisk('${k}')">${l}</button>`).join('')}</span>
-    <p class="cfoot">Sets the advanced dials for you. Fine-tune them in <b>Settings</b> only if you know them.</p></div>`;
+    <p class="cfoot">Sets the advanced dials on every engine. Fine-tune in Settings.</p></div>`;
 }
 function ctlTarget(){const t=E.futures.C.data.daily_profit_target_usd||'';
-  return `<div class="glass ctl"><div class="cl">Daily target <span class="cln">USDT / day</span></div>
+  return `<div class="glass ctl"><div class="cl">Daily target <span class="cln">per day</span></div>
     <div class="row"><input id="cmdTarget" type="number" step="any" placeholder="e.g. 100" value="${t}" style="max-width:130px">
       <button class="primary mini" onclick="applyTarget()">Set</button></div>
-    <p class="cfoot">In <b>Both</b> mode Treo tunes both engines toward it. 0 / blank = no target.</p></div>`;
+    <p class="cfoot">Applies to the position engines (futures + forex). 0 / blank = no target.</p></div>`;
 }
-function ctlAI(){const g=aiState('ai_guide',true), a=aiState('ai_autopilot',false);
+function aiState(key,def){const v=E.futures.C.data[key];return v==null?def:(v===true||v==='true');}
+function ctlAI(){const g=aiState('ai_guide',true),a=aiState('ai_autopilot',false);
   return `<div class="glass ctl" style="grid-column:1/-1"><div class="cl">AI copilot <span class="cln">the coach on the Brain panel</span></div>
     <div class="aitog"><div><div class="lbl">Coach insights</div><div class="sub">AI reads your results and shows guidance. It only advises — never trades.</div></div>
       <div class="sw violet ${g?'on':''}" onclick="setAI('ai_guide',${!g})"></div></div>
-    <div class="aitog"><div><div class="lbl">Let AI adapt on its own</div><div class="sub">AI may stop opening coins it flags as losers. It still can't touch your risk, stops or size.</div></div>
+    <div class="aitog"><div><div class="lbl">Let AI adapt on its own</div><div class="sub">AI may stop opening instruments it flags as losers. It still can't touch your risk, stops or size.</div></div>
       <div class="sw ${a?'on':''}" onclick="setAI('ai_autopilot',${!a})"></div></div></div>`;
 }
-function aiState(key,def){const v=E.futures.C.data[key]; return v==null?def:(v===true||v==='true');}
-async function setAI(key,val){
-  for(const e of ['spot','futures']){const patch=Object.assign({},E[e].C.data,{[key]:val});await bumpCfg(ROW[e],patch);}
-  await fetchConfigs(); build();
-}
+async function setAI(key,val){for(const e of ENGINES){await bumpCfg(ROW[e],Object.assign({},E[e].C.data,{[key]:val}));}await fetchConfigs();build();}
 async function applyRisk(k){const r=RISK[k];
-  await bumpCfg(ROW.futures,Object.assign({},E.futures.C.data,r.fut));
-  await bumpCfg(ROW.spot,Object.assign({},E.spot.C.data,r.spot));
-  await fetchConfigs(); build();
-  modal(`<div class="modal-bg"><div class="glass modal"><h3>Risk set to ${k.charAt(0).toUpperCase()+k.slice(1)} ✓</h3>
-    <p class="mut" style="font-size:13px">Both engines re-tuned. Futures now trades ${k==='safe'?'selectively at 1× with a stop':k==='aggressive'?'actively at 3× with a stop':'balanced at 2× with a stop'}; spot stays a long-only accumulator. Change individual dials any time in Settings.</p>
+  for(const e of ENGINES){const preset=OWNERSHIP.has(e)?r.own:r.pos;await bumpCfg(ROW[e],Object.assign({},E[e].C.data,preset));}
+  await fetchConfigs();build();
+  modal(`<div class="modal-bg"><div class="glass modal"><h3>Risk set to ${k[0].toUpperCase()+k.slice(1)} ✓</h3>
+    <p class="mut" style="font-size:13px">All four engines re-tuned. Position engines (futures, forex) got the ${k} risk profile; ownership engines (spot, stocks) stay long-only accumulators. Change any dial in Settings.</p>
     <div class="row" style="margin-top:14px"><button class="primary" onclick="closeModal()">Got it</button></div></div></div>`);
 }
-async function applyTarget(){const t=Number(document.getElementById('cmdTarget').value)||0;
-  await bumpCfg(ROW.futures,Object.assign({},E.futures.C.data,{daily_profit_target_usd:t,daily_loss_limit_usd:Math.max(0,Math.round(t*0.6))}));
-  await fetchConfigs(); build();
+async function applyTarget(){const t=Number(document.getElementById('cmdTarget').value)||0;const ll=Math.max(0,Math.round(t*0.6));
+  for(const e of ['futures','forex']){await bumpCfg(ROW[e],Object.assign({},E[e].C.data,{daily_profit_target_usd:t,daily_loss_limit_usd:ll}));}
+  await fetchConfigs();build();
   modal(`<div class="modal-bg"><div class="glass modal"><h3>${t>0?('Daily target set to $'+t+' ✨'):'Daily target cleared'}</h3>
-    <p class="mut" style="font-size:13px">${t>0?('Futures will lock in the day once it makes $'+t+', with a $'+Math.max(0,Math.round(t*0.6))+' daily loss brake. Switch to <b>Both</b> style to run spot alongside it.'):'No daily profit target — the engines run continuously.'}</p>
+    <p class="mut" style="font-size:13px">${t>0?('Futures &amp; forex will lock in the day at +$'+t+', each with a $'+ll+' daily loss brake.'):'No daily profit target — the position engines run continuously.'}</p>
     <div class="row" style="margin-top:14px"><button class="primary" onclick="closeModal()">Got it</button></div></div></div>`);
 }
-
-function engPanel(e){const label=e.toUpperCase()+' ENGINE';
+function engPanel(e){
   return `<div class="glass eng" id="eng_${e}">
-    <div class="ehead"><span class="ename">${label}</span><span class="badge" id="eb_${e}">—</span></div>
+    <div class="ehead"><span class="ename">${e.toUpperCase()}</span><span class="emkt">${ENG_MKT[e]}</span><span class="spacer"></span><span class="badge" id="eb_${e}">—</span></div>
     <div class="orb" id="orb_${e}"><div><div class="os" id="os_${e}">—</div><div class="osub" id="osub_${e}"></div></div></div>
     <div class="ekpi">
       <div><div class="k">Balance</div><div class="v" id="ebal_${e}">—</div></div>
@@ -517,37 +410,21 @@ function engPanel(e){const label=e.toUpperCase()+' ENGINE';
       <div><div class="k">Open</div><div class="v" id="eopen_${e}">—</div></div>
     </div>
     <div class="sats" id="esats_${e}" style="margin-top:14px"></div>
-    <p class="mut" id="efoot_${e}" style="font-size:11px;margin:12px 0 0"></p>
-  </div>`;
-}
-function engPanelSoon(name,icon,note){
-  return `<div class="glass eng soon">
-    <div class="ehead"><span class="ename">${name} ENGINE</span><span class="badge b-mode">SOON</span></div>
-    <div class="orb dim"><div><div class="os">${icon}</div><div class="osub">not connected</div></div></div>
-    <p class="mut" style="font-size:12px;text-align:center;margin:14px 6px 0">Connect a <b>${note}</b> account to activate this engine. Same dashboard, same controls.</p></div>`;
+    <p class="mut" id="efoot_${e}" style="font-size:11px;margin:12px 0 0"></p></div>`;
 }
 function vCommand(){
-  return `
-    <div class="deck">
-      ${ctlStyle()}
-      ${ctlMarkets()}
-      ${ctlRisk()}
-      ${ctlTarget()}
-      ${ctlAI()}
-    </div>
+  return `<div class="deck">${ctlMarkets()}${ctlStyle()}${ctlRisk()}${ctlTarget()}${ctlAI()}</div>
     <div class="cards" id="combo" style="margin:16px 0 6px"></div>
     <h2>Engines</h2>
-    <div class="engine-grid">${engPanel('spot')}${engPanel('futures')}</div>
-    <div class="engine-grid" style="margin-top:14px">${engPanelSoon('FOREX','💱','OANDA demo')}${engPanelSoon('US STOCKS','📈','Alpaca paper')}</div>`;
+    <div class="engine-grid">${ENGINES.map(engPanel).join('')}</div>`;
 }
-function money(n){const v=+n||0;return (v>=0?'+$':'−$')+Math.abs(v).toFixed(2);}
 function syncEngine(e){
   const S=E[e].S, el=id=>document.getElementById(id); if(!el('orb_'+e))return;
   const stt=engStatus(e), on=engRunning(e);
   el('eng_'+e).className='glass eng'+(on?'':' off');
   el('eb_'+e).className='badge '+stt.cls; el('eb_'+e).innerHTML=`<span class="statusdot ${stt.dot}"></span>${stt.txt}`;
   el('orb_'+e).className='orb '+stt.orb; el('os_'+e).textContent=stt.txt; el('osub_'+e).textContent=stt.sub;
-  const usd=S.day_pnl_usd||0, pct=S.day_pnl_pct||0, uc=usd>=0?'pos':'neg';
+  const usd=S.day_pnl_usd||0, uc=usd>=0?'pos':'neg';
   el('ebal_'+e).textContent=(S.balance||0).toFixed(0);
   el('epnl_'+e).innerHTML=`<span class="${uc}">${money(usd)}</span>`;
   el('eopen_'+e).textContent=(S.open_count||0)+' / '+(S.max_positions??'—');
@@ -556,27 +433,24 @@ function syncEngine(e){
     const lean=sc.long>sc.short?'long':(sc.short>sc.long?'short':'—');const mx=Math.max(sc.long,sc.short);
     const tag=lean==='—'?'<span class="mut" style="font-size:10px">flat</span>':`<span class="tag ${lean}">${lean==='long'?'▲':'▼'} ${mx}/4</span>`;
     return `<div class="sat"><div class="s">${s.replace('/USDT','')}</div><div class="p">${fmt(o.price)}</div><div style="margin-top:6px">${tag}</div></div>`;
-  }).join('')||'<span class="mut" style="font-size:12px">connecting…</span>';
-  const tf=S.timeframe||'—', dir=(e==='spot')?'long-only':'long+short';
-  el('efoot_'+e).textContent=`${dir} · every ${S.poll_seconds||'—'}s on ${tf} · ${S.win_rate!=null?S.win_rate+'% win':''} · last scan ${staleSecs(S)!=null?staleSecs(S)+'s ago':'—'}`;
+  }).join('')||'<span class="mut" style="font-size:12px">'+(on?'connecting…':'paused')+'</span>';
+  const tf=S.timeframe||'—', dir=OWNERSHIP.has(e)?'long-only':'long+short';
+  el('efoot_'+e).textContent=`${dir} · ${tf} · ${S.win_rate!=null?S.win_rate+'% win':''} · last scan ${staleSecs(S)!=null?staleSecs(S)+'s ago':'—'}`;
 }
 function syncCommand(){
   const combo=document.getElementById('combo'); if(!combo)return;
-  const bal=(E.spot.S.balance||0)+(E.futures.S.balance||0);
-  const usd=(E.spot.S.day_pnl_usd||0)+(E.futures.S.day_pnl_usd||0);
-  const openN=(E.spot.S.open_count||0)+(E.futures.S.open_count||0);
-  const m=currentMode();
+  let bal=0,usd=0,openN=0,liveN=0;
+  ENGINES.forEach(e=>{bal+=E[e].S.balance||0;usd+=E[e].S.day_pnl_usd||0;openN+=E[e].S.open_count||0;if(engRunning(e))liveN++;});
   combo.innerHTML=card('Combined balance','$'+bal.toFixed(2))+
     card('Combined today',`<span class="${usd>=0?'pos':'neg'}">${money(usd)}</span>`)+
-    card('Open positions',openN)+
-    card('Mode',`<span style="font-size:16px">${m.toUpperCase()}</span>`)+
-    card('Closed trades',T.length);
-  syncEngine('spot'); syncEngine('futures');
+    card('Open positions',openN)+card('Engines live',liveN+' / 4')+card('Closed trades',T.length);
+  ENGINES.forEach(syncEngine);
 }
 
-// ---------- TRADES (combined, engine-filterable) ----------
+/* ---------- TRADES ---------- */
 let tf_res='all', tf_eng='all';
 function vTrades(){
+  const ebtn=(k,l)=>`<button class="mini ${tf_eng===k?'on':''}" onclick="setEng('${k}')">${l}</button>`;
   return `<h2>Open now</h2><div id="topen"></div>
     <h2>Performance</h2>
     <div class="charts">
@@ -587,9 +461,7 @@ function vTrades(){
     <h2>Breakdown — what's actually working</h2><div id="tbreak"></div>
     <h2>Closed trades</h2>
     <div class="filterbar">
-      <button class="mini ${tf_eng==='all'?'on':''}" onclick="setEng('all')">All engines</button>
-      <button class="mini ${tf_eng==='spot'?'on':''}" onclick="setEng('spot')">Spot</button>
-      <button class="mini ${tf_eng==='futures'?'on':''}" onclick="setEng('futures')">Futures</button>
+      ${ebtn('all','All')}${ebtn('spot','Spot')}${ebtn('futures','Futures')}${ebtn('forex','Forex')}${ebtn('stocks','Stocks')}
       <span style="width:14px"></span>
       <button class="mini ${tf_res==='all'?'on':''}" onclick="setRes('all')">All</button>
       <button class="mini ${tf_res==='wins'?'on':''}" onclick="setRes('wins')">Wins</button>
@@ -608,15 +480,14 @@ function btable(title,arr){if(!arr.length)return '';
      <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
 function syncTrades(){
   const el=id=>document.getElementById(id); if(!el('tstats'))return;
-  // open positions from both engines
   let openRows='';
-  ['spot','futures'].forEach(e=>{const p=E[e].S.positions||{};Object.keys(p).forEach(s=>{const o=p[s];const side=o.side||'long';
+  ENGINES.forEach(e=>{const p=E[e].S.positions||{};Object.keys(p).forEach(s=>{const o=p[s];const side=o.side||'long';
     const u=o.unreal_pct||0;const c=u>=0?'pos':'neg';
     openRows+=`<tr><td><span class="chip">${e}</span></td><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
       <td>${fmt(o.entry)}</td><td>${o.stop?fmt(o.stop):'—'}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
       <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td></tr>`;});});
   el('topen').innerHTML=openRows?`<div class="glass panel tblwrap"><table>
-    <tr><th>Engine</th><th>Pair</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
+    <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>';
   const D=trByEng();
   const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
@@ -627,11 +498,11 @@ function syncTrades(){
     card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
   el('tbreak').innerHTML=D.length?(
     btable('Engine',grp(D,x=>x.engine||'futures'))+btable('Side',grp(D,x=>(x.result||'').split(' ')[0]||null))+
-    btable('Pair',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
+    btable('Instrument',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
   ):'<p class="mut" style="padding:8px">Breakdown appears once trades close.</p>';
   let rows=D.slice().reverse();
   if(tf_res==='wins')rows=rows.filter(x=>+x.pnl_pct>0); if(tf_res==='losses')rows=rows.filter(x=>+x.pnl_pct<=0);
-  el('thist').innerHTML=rows.length?`<table><tr><th>Time</th><th>Eng</th><th>Pair</th><th>Entry</th><th>Exit</th><th>Result</th><th>P&L</th><th>Why</th></tr>`+
+  el('thist').innerHTML=rows.length?`<table><tr><th>Time</th><th>Eng</th><th>Instrument</th><th>Entry</th><th>Exit</th><th>Result</th><th>P&L</th><th>Why</th></tr>`+
     rows.map(x=>{const c=+x.pnl_pct>=0?'pos':'neg';return `<tr><td class="mut">${x.ts||''}</td><td><span class="chip">${x.engine||'fut'}</span></td><td>${x.symbol}</td>
       <td>${fmt(x.entry)}</td><td>${fmt(x.exit)}</td><td>${x.result}</td>
       <td class="${c}">${+x.pnl_pct>=0?'+':''}${(+x.pnl_pct).toFixed(2)}%</td><td class="mut">${x.reason||''}</td></tr>`;}).join('')+`</table>`
@@ -651,7 +522,7 @@ function drawWL(){const ctx=document.getElementById('wlChart');if(!ctx)return;co
   wlChart=new Chart(ctx,{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[wins,losses],backgroundColor:[css('--good'),css('--bad')],borderColor:'#0a0e17',borderWidth:2}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,plugins:{legend:{position:'bottom',labels:{color:css('--ink-2'),boxWidth:12,padding:14}}}}});}
 
-// ---------- MARKETS (per engine) ----------
+/* ---------- MARKETS ---------- */
 function vMarkets(){return `<div id="marketsBox"></div>`;}
 function mktTable(e){const S=E[e].S,sig=S.signals||{};
   const rows=Object.keys(sig).map(s=>{const o=sig[s],ind=o.indicators||{},sc=o.score||{long:0,short:0};
@@ -660,76 +531,66 @@ function mktTable(e){const S=E[e].S,sig=S.signals||{};
     const read=o.signal?`<span class="${o.signal==='long'?'pos':'neg'}"><b>${o.signal.toUpperCase()}</b></span>`:`<span class="mut">${o.reason||''}</span>`;
     return `<tr><td><b>${s}</b></td><td>${fmt(o.price)}</td><td>${o.rsi!=null?o.rsi:'—'}</td>
       <td class="mut">${ind.support?fmt(ind.support):'—'} / ${ind.resistance?fmt(ind.resistance):'—'}</td><td>${bias}</td><td>${read}</td></tr>`;}).join('')
-    ||'<tr><td class="mut" colspan="6">Waiting for data…</td></tr>';
-  return `<h2>${e.toUpperCase()} — markets</h2><div class="glass panel tblwrap"><table>
-    <tr><th>Pair</th><th>Price</th><th>RSI</th><th>Support / Resist.</th><th>Bias</th><th>Read</th></tr>${rows}</table></div>`;
+    ||`<tr><td class="mut" colspan="6">${engRunning(e)?'Waiting for data…':'Engine paused.'}</td></tr>`;
+  return `<h2>${e.toUpperCase()} <span class="mut" style="text-transform:none;letter-spacing:0">— ${ENG_MKT[e]}</span></h2>
+    <div class="glass panel tblwrap"><table>
+    <tr><th>Instrument</th><th>Price</th><th>RSI</th><th>Support / Resist.</th><th>Bias</th><th>Read</th></tr>${rows}</table></div>`;
 }
-function syncMarkets(){const box=document.getElementById('marketsBox');if(!box)return;
-  box.innerHTML=mktTable('spot')+mktTable('futures');}
+function syncMarkets(){const box=document.getElementById('marketsBox');if(!box)return;box.innerHTML=ENGINES.map(mktTable).join('');}
 
-/* ==========================================================================
-   SETTINGS — advanced dials only, one engine at a time
-   (everyday controls now live in Command)
-   ========================================================================== */
+/* ---------- SETTINGS ---------- */
 function setEngView(e){engView=e;build();}
 function fieldHTML(k,v){const label=LABELS[k]||k; if(Array.isArray(v))v=v.join(', ');
   if(BOOL.has(k)){const on=(v===true||v==='true');
     return `<div class="field"><label>${label}</label><select data-k="${k}">
       <option value="true" ${on?'selected':''}>On</option><option value="false" ${!on?'selected':''}>Off</option></select></div>`;}
-  const type=(typeof v==='number'||!isNaN(parseFloat(v)))&&k!=='symbols'&&k!=='timeframe'?'number':'text';
+  const type=(typeof v==='number'||!isNaN(parseFloat(v)))&&k!=='symbols'?'number':'text';
   return `<div class="field"><label>${label}</label><input data-k="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${v!=null?v:''}"></div>`;
 }
-function engineSettingsBlock(e,groups){const cfg=E[e].C.data||{};
+function engineSettingsBlock(e){const c=E[e].C.data||{};const groups=groupsFor(e);
   const inner=groups.map(([title,keys])=>`
     <div style="margin-bottom:12px"><div class="mut" style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:10px 0 8px">${title}</div>
-      <div class="form-grid">${keys.map(k=>{let v=cfg[k];if(v==null)v=DEFAULTS[k];return fieldHTML(k,v);}).join('')}</div></div>`).join('');
+      <div class="form-grid">${keys.map(k=>{let v=c[k];if(v==null)v=DEFAULTS[k];return fieldHTML(k,v);}).join('')}</div></div>`).join('');
   return `<div class="glass panel" id="set_${e}">
     <div class="row" style="margin-bottom:6px"><span class="ename" style="font-family:'Orbitron';letter-spacing:2px;font-size:14px">${e.toUpperCase()}</span>
+      <span class="emkt" style="font-size:10px;color:var(--muted)">${ENG_MKT[e]}</span>
       <span class="spacer"></span><button class="primary mini" onclick="saveEngine('${e}')">Save ${e}</button></div>
     <div class="saved" id="saved_${e}" hidden style="margin-bottom:8px"></div>
-    ${e==='spot'?'<p class="hint" style="margin:0 0 8px">Spot is long-only and has <b>no stop-loss</b> — it holds until a take-profit, never sells at a loss.</p>':''}
+    ${OWNERSHIP.has(e)?'<p class="hint" style="margin:0 0 8px">Ownership engine: long-only, <b>no stop-loss</b> — holds until a take-profit, never sells at a loss.</p>':''}
     ${inner}</div>`;
 }
 function vSettings(){
-  const segs=[['spot','Spot',true],['futures','Futures',true],['forex','Forex',false],['stocks','US Stocks',false]];
-  const block=engView==='spot'?engineSettingsBlock('spot',SPOT_GROUPS):engineSettingsBlock('futures',FUT_GROUPS);
+  const segs=ENGINES.map(e=>`<button class="${engView===e?'on':''}" onclick="setEngView('${e}')">${e[0].toUpperCase()+e.slice(1)}</button>`).join('');
   return `<h2>Advanced settings <span class="mut" style="text-transform:none;letter-spacing:0">— the dials experienced traders tune</span></h2>
     <div class="glass panel" style="margin-bottom:14px">
-      <p class="mut" style="margin:0;font-size:13px">These are the raw indicators, ratios and risk levers. Everyday controls — <b>markets, style, risk appetite, daily target and the AI copilot</b> — all live on the <b>Command</b> tab. If you're not sure, set your <b>Risk appetite</b> there and leave these alone.</p></div>
+      <p class="mut" style="margin:0;font-size:13px">Raw indicators, ratios and risk levers. Everyday controls — <b>markets, style, risk appetite, daily target, AI</b> — live on the <b>Command</b> tab. If unsure, set your <b>Risk appetite</b> there and leave these alone.</p></div>
     <div class="row" style="margin-bottom:14px"><span class="mut" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-right:4px">Editing:</span>
-      <span class="mode-seg">${segs.map(([k,l,live])=>`<button class="${engView===k?'on':''}" ${live?'':'disabled'} onclick="${live?`setEngView('${k}')`:''}">${l}${live?'':' · soon'}</button>`).join('')}</span></div>
-    <div id="setWrap">${block}</div>
-    <p class="hint">Changes apply within seconds. A risky change asks you to confirm first. Forex &amp; US-Stocks dials appear here once those engines are connected.</p>`;
+      <span class="mode-seg">${segs}</span></div>
+    <div id="setWrap">${engineSettingsBlock(engView)}</div>
+    <p class="hint">Changes apply within seconds. A risky change asks you to confirm first.</p>`;
 }
-function fillSettings(){ /* rendered by vSettings from E[].C.data; nothing async needed */ }
-
 function readBlock(e){const box=document.getElementById('set_'+e);const patch={};
   box.querySelectorAll('[data-k]').forEach(el=>{const k=el.getAttribute('data-k');
     if(BOOL.has(k)){patch[k]=el.value==='true';return;}
     if(el.type==='number'){if(el.value.trim()==='')return;patch[k]=Number(el.value);return;}
     patch[k]=el.value;});
   return patch;}
-
-// plain-language risk checks
-function riskWarnings(e,p){const w=[];
-  if(e==='futures'){
-    if(+p.leverage>3)w.push(`Leverage ${p.leverage}× multiplies every move — a ${(100/ p.leverage).toFixed(0)}% adverse swing can wipe the position.`);
-    if(p.use_stop_loss===false)w.push(`Stop-loss OFF on futures: a losing trade has no automatic exit, so losses can run without limit.`);
-    if((+p.daily_loss_limit_usd||0)===0&&(+p.daily_loss_limit_pct||0)===0)w.push(`No daily loss limit: a bad day won't auto-stop the bot.`);
+function riskWarnings(e,p){const w=[];const own=OWNERSHIP.has(e);
+  if(!own){
+    if(+p.leverage>3)w.push(`Leverage ${p.leverage}× multiplies every move — a ${(100/p.leverage).toFixed(0)}% adverse swing can wipe the position.`);
+    if(p.use_stop_loss===false)w.push(`Stop-loss OFF: a losing trade has no automatic exit, so losses can run without limit.`);
     if(+p.reward_risk<1)w.push(`Reward:risk below 1 means winners are smaller than losers — hard to be profitable.`);
   }
   if(+p.score_threshold&&+p.score_threshold<3)w.push(`Votes needed = ${p.score_threshold}: it will trade far more often — more noise and more fees.`);
   if(+p.risk_per_trade_pct>3)w.push(`Risking ${p.risk_per_trade_pct}% per trade is aggressive; a losing streak draws the balance down fast.`);
   return w;}
-
 function modal(html){document.getElementById('modalHost').innerHTML=html;}
 function closeModal(){document.getElementById('modalHost').innerHTML='';}
 let _pending=null;
 async function saveEngine(e){const patch=readBlock(e);const w=riskWarnings(e,patch);
   if(w.length){_pending={e,patch};
-    modal(`<div class="modal-bg"><div class="glass modal">
-      <h3>⚠️ Heads up before saving ${e}</h3>
-      <p class="mut" style="font-size:13px;margin:4px 0 12px">This change could hurt more than help. Here's what it means:</p>
+    modal(`<div class="modal-bg"><div class="glass modal"><h3>⚠️ Heads up before saving ${e}</h3>
+      <p class="mut" style="font-size:13px;margin:4px 0 12px">This change could hurt more than help:</p>
       ${w.map(x=>`<div class="warn-item"><span class="warn-ic">▲</span><span>${x}</span></div>`).join('')}
       <div class="row" style="margin-top:16px"><button class="danger" onclick="confirmSave()">Save anyway</button>
         <button class="ghost" onclick="closeModal()">Cancel</button></div></div></div>`);
@@ -747,11 +608,9 @@ async function commitSave(e,patch){
     setTimeout(()=>{if(m)m.hidden=true},4000);}
 }
 
-function card(k,v){return `<div class="glass card"><div class="k">${k}</div><div class="v">${v}</div></div>`}
-
 const login=document.getElementById('login'),app=document.getElementById('app'),tabs=document.getElementById('tabs'),
-  view=document.getElementById('view'),modeSeg=document.getElementById('modeSeg'),
-  email_=document.getElementById('email'),password_=document.getElementById('password'),loginMsg=document.getElementById('loginMsg');
+  view=document.getElementById('view'),email_=document.getElementById('email'),
+  password_=document.getElementById('password'),loginMsg=document.getElementById('loginMsg');
 boot();
 </script>
 </body>
