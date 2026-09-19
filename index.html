@@ -359,6 +359,10 @@ async function bumpCfg(id,patch){const {data}=await sb.from('bot_config').select
 function build(){
   const anyLive=ENGINES.some(engRunning);
   document.getElementById('liveNote').textContent=anyLive?'':'all engines paused';
+  const realMoney=ENGINES.some(e=>E[e].S.mode==='LIVE');
+  const envb=document.getElementById('envBadge');
+  if(envb){envb.textContent=realMoney?'⚠ SPOT LIVE · REAL MONEY':'STAGING · DEMO';
+    envb.style.color=realMoney?'#ff5d72':''; envb.style.borderColor=realMoney?'#ff5d72':'';}
   view.innerHTML=({Command:vCommand,Trades:vTrades,Markets:vMarkets,Settings:vSettings}[active])();
   if(active==='Command')syncCommand();
   if(active==='Trades'){drawPnl();drawWL();syncTrades();}
@@ -447,7 +451,7 @@ async function applyTarget(){const t=Number(document.getElementById('cmdTarget')
 }
 function engPanel(e){
   return `<div class="glass eng" id="eng_${e}">
-    <div class="ehead"><span class="ename">${e.toUpperCase()}</span><span class="emkt">${ENG_MKT[e]}</span><span class="spacer"></span><span class="badge" id="eb_${e}">—</span></div>
+    <div class="ehead"><span class="ename">${e.toUpperCase()}</span><span id="elive_${e}"></span><span class="emkt">${ENG_MKT[e]}</span><span class="spacer"></span><span class="badge" id="eb_${e}">—</span></div>
     <div class="orb" id="orb_${e}"><div><div class="os" id="os_${e}">—</div><div class="osub" id="osub_${e}"></div></div></div>
     <div class="ekpi">
       <div><div class="k">Balance</div><div class="v" id="ebal_${e}">—</div></div>
@@ -472,6 +476,7 @@ function syncEngine(e){
   const stt=engStatus(e), on=engRunning(e);
   el('eng_'+e).className='glass eng'+(on?'':' off');
   el('eb_'+e).className='badge '+stt.cls; el('eb_'+e).innerHTML=`<span class="statusdot ${stt.dot}"></span>${stt.txt}`;
+  const lv=el('elive_'+e); if(lv) lv.innerHTML=(S.mode==='LIVE')?'<span class="badge" style="color:#ff5d72;border-color:#ff5d72;font-weight:800;margin-left:8px">● LIVE · REAL $</span>':'';
   el('orb_'+e).className='orb '+stt.orb; el('os_'+e).textContent=stt.txt; el('osub_'+e).textContent=stt.sub;
   const usd=S.day_pnl_usd||0, uc=usd>=0?'pos':'neg';
   el('ebal_'+e).textContent=(S.balance||0).toFixed(0);
