@@ -489,15 +489,19 @@ function syncEngine(e){
     return `<div class="sat"><div class="s">${s.replace('/USDT','')}</div><div class="p">${fmt(o.price)}</div><div style="margin-top:6px">${tag}</div></div>`;
   }).join('')||'<span class="mut" style="font-size:12px">'+(on?'connecting…':'paused')+'</span>';
   const tf=S.timeframe||'—', dir=OWNERSHIP.has(e)?'long-only':'long+short';
-  el('efoot_'+e).textContent=`${dir} · ${tf} · ${S.win_rate!=null?S.win_rate+'% win':''} · last scan ${staleSecs(S)!=null?staleSecs(S)+'s ago':'—'}`;
+  const P=S.positions||{};let invE=0;Object.keys(P).forEach(s=>{const o=P[s];invE+=(+o.amount||0)*(+(o.now||o.entry)||0);});
+  const freeE=Math.max(0,(+S.balance||0)-invE);
+  el('efoot_'+e).textContent=`${dir} · ${tf} · ${S.win_rate!=null?S.win_rate+'% win':''} · $${invE.toFixed(2)} in / $${freeE.toFixed(2)} free · last scan ${staleSecs(S)!=null?staleSecs(S)+'s ago':'—'}`;
 }
 function syncCommand(){
   const combo=document.getElementById('combo'); if(!combo)return;
-  let bal=0,usd=0,openN=0,liveN=0;
-  ENGINES.forEach(e=>{bal+=E[e].S.balance||0;usd+=E[e].S.day_pnl_usd||0;openN+=E[e].S.open_count||0;if(engRunning(e))liveN++;});
-  combo.innerHTML=card('Combined balance','$'+bal.toFixed(2))+
-    card('Combined today',`<span class="${usd>=0?'pos':'neg'}">${money(usd)}</span>`)+
-    card('Open positions',openN)+card('Engines live',liveN+' / 4')+card('Closed trades',T.length);
+  let bal=0,usd=0,openN=0,liveN=0,dep=0,pnlAll=0;
+  ENGINES.forEach(e=>{const S=E[e].S;bal+=S.balance||0;usd+=S.day_pnl_usd||0;openN+=S.open_count||0;dep+=S.net_deposits||0;pnlAll+=(S.pnl_all_usd||0);if(engRunning(e))liveN++;});
+  combo.innerHTML=card('Balance (equity)','$'+bal.toFixed(2))+
+    card('Capital in',dep>0?'$'+dep.toFixed(2):'—')+
+    card('Profit — all-time',`<span class="${pnlAll>=0?'pos':'neg'}">${money(pnlAll)}</span>`)+
+    card('Profit — today',`<span class="${usd>=0?'pos':'neg'}">${money(usd)}</span>`)+
+    card('Open positions',openN)+card('Engines live',liveN+' / 4');
   ENGINES.forEach(syncEngine);
   syncAiStatus();
 }
@@ -538,22 +542,31 @@ function syncTrades(){
   let openRows='';
   ENGINES.forEach(e=>{const p=E[e].S.positions||{};Object.keys(p).forEach(s=>{const o=p[s];const side=o.side||'long';
     const u=o.unreal_pct||0;const c=u>=0?'pos':'neg';
+    const qty=+o.amount||0, entry=+o.entry||0, now=+(o.now||o.entry)||0;
+    const cost=qty*entry, val=qty*now;
     openRows+=`<tr><td><span class="chip">${e}</span></td><td>${s}</td><td class="${side==='long'?'pos':'neg'}"><b>${side.toUpperCase()}</b></td>
-      <td>${fmt(o.entry)}</td><td>${o.stop?fmt(o.stop):'—'}</td><td>${fmt(o.target)}</td><td>${fmt(o.now)}</td>
+      <td>${fmt(qty)}</td><td>${fmt(entry)}</td><td>${fmt(now)}</td>
+      <td>$${cost.toFixed(2)}</td><td>$${val.toFixed(2)}</td>
       <td class="${c}">${u>=0?'+':''}${(+u).toFixed(2)}%</td>
       <td>${isQueued(e,s)?'<span class="mut">closing…</span>':`<button class="mini danger" onclick="closePos('${e}','${s}')">Close</button>`}</td></tr>`;});});
   const bar=ENGINES.filter(e=>Object.keys(E[e].S.positions||{}).length)
     .map(e=>`<button class="mini danger" onclick="closeAllEngine('${e}')">Close all ${e} (${Object.keys(E[e].S.positions||{}).length})</button>`).join('');
-  el('topen').innerHTML=openRows?`${bar?`<div class="filterbar">${bar}</div>`:''}<div class="glass panel tblwrap"><table>
-    <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Entry</th><th>Stop</th><th>Target</th><th>Now</th><th>Unreal.</th><th>Action</th></tr>${openRows}</table></div>`
-    :'<p class="mut" style="padding:8px">No open positions right now.</p>';
+  let wallet='';
+  ENGINES.forEach(e=>{const S=E[e].S;const p=S.positions||{};const n=Object.keys(p).length;const bal=+S.balance||0;
+    let inv=0;Object.keys(p).forEach(s=>{const o=p[s];inv+=(+o.amount||0)*(+(o.now||o.entry)||0);});
+    if(bal>0||n>0){wallet+=card(e.toUpperCase()+' — invested',`$${inv.toFixed(2)} · ${n} coin${n!=1?'s':''}`)
+      +card(e.toUpperCase()+' — free to buy','$'+Math.max(0,bal-inv).toFixed(2));}});
+  el('topen').innerHTML=(wallet?`<div class="cards" style="margin-bottom:10px">${wallet}</div>`:'')
+    +(openRows?`${bar?`<div class="filterbar">${bar}</div>`:''}<div class="glass panel tblwrap"><table>
+    <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Qty</th><th>Entry</th><th>Now</th><th>Cost&nbsp;$</th><th>Value&nbsp;$</th><th>Unreal.</th><th>Action</th></tr>${openRows}</table></div>`
+    :'<p class="mut" style="padding:8px">No open positions right now.</p>');
   const D=trByEng();
   const wins=D.filter(x=>+x.pnl_pct>0),losses=D.filter(x=>+x.pnl_pct<=0);
   const avg=a=>a.length?(a.reduce((s,x)=>s+ +x.pnl_pct,0)/a.length):0;
   const net=D.reduce((s,x)=>s+ +x.pnl_pct,0);
   el('tstats').innerHTML=card('Total',D.length)+card('Win rate',D.length?Math.round(wins.length/D.length*100)+'%':'—')+
     card('Avg win',`<span class="pos">+${avg(wins).toFixed(2)}%</span>`)+card('Avg loss',`<span class="neg">${avg(losses).toFixed(2)}%</span>`)+
-    card('Net (sum %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
+    card('Net (sum of trade %)',`<span class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${net.toFixed(2)}%</span>`);
   el('tbreak').innerHTML=D.length?(
     btable('Engine',grp(D,x=>x.engine||'futures'))+btable('Side',grp(D,x=>(x.result||'').split(' ')[0]||null))+
     btable('Instrument',grp(D,x=>x.symbol))+btable('Signal strength',grp(D,x=>{const m=(x.reason||'').match(/(\d)\/4/);return m?m[1]+'/4 votes':null;}))
