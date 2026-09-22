@@ -495,13 +495,19 @@ function syncEngine(e){
 }
 function syncCommand(){
   const combo=document.getElementById('combo'); if(!combo)return;
-  let bal=0,usd=0,openN=0,liveN=0,dep=0,pnlAll=0;
-  ENGINES.forEach(e=>{const S=E[e].S;bal+=S.balance||0;usd+=S.day_pnl_usd||0;openN+=S.open_count||0;dep+=S.net_deposits||0;pnlAll+=(S.pnl_all_usd||0);if(engRunning(e))liveN++;});
-  combo.innerHTML=card('Balance (equity)','$'+bal.toFixed(2))+
+  // Headline = REAL-MONEY engines only (mode==='LIVE'). Demo/paper balances (e.g. the
+  // $100k stocks paper account) must NEVER bleed into real P&L — that mixing is what
+  // made "today" show a phantom loss while spot was actually up.
+  let bal=0,usd=0,openN=0,liveN=0,dep=0,pnlAll=0,demoN=0;
+  ENGINES.forEach(e=>{const S=E[e].S;const isLive=(S.mode==='LIVE');
+    if(engRunning(e))(isLive?liveN++:demoN++);
+    openN+=S.open_count||0;
+    if(isLive){bal+=S.balance||0;usd+=S.day_pnl_usd||0;dep+=S.net_deposits||0;pnlAll+=(S.pnl_all_usd||0);}});
+  combo.innerHTML=card('Balance — real $','$'+bal.toFixed(2))+
     card('Capital in',dep>0?'$'+dep.toFixed(2):'—')+
     card('Profit — all-time',`<span class="${pnlAll>=0?'pos':'neg'}">${money(pnlAll)}</span>`)+
     card('Profit — today',`<span class="${usd>=0?'pos':'neg'}">${money(usd)}</span>`)+
-    card('Open positions',openN)+card('Engines live',liveN+' / 4');
+    card('Open (all engines)',openN)+card('Engines',`${liveN} live · ${demoN} demo`);
   ENGINES.forEach(syncEngine);
   syncAiStatus();
 }
@@ -537,6 +543,23 @@ function btable(title,arr){if(!arr.length)return '';
    <table style="margin-top:6px"><tr><th>${title}</th><th>Trades</th><th>Win%</th><th>Net</th></tr>`+
    arr.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.w/r.n*100)}%</td>
      <td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':''}${r.net.toFixed(2)}%</td></tr>`).join('')+`</table></div>`;}
+function walletCard(e,S){
+  const p=S.positions||{};const n=Object.keys(p).length;const bal=+S.balance||0;
+  let inv=0;Object.keys(p).forEach(s=>{const o=p[s];inv+=(+o.amount||0)*(+(o.now||o.entry)||0);});
+  const free=Math.max(0,bal-inv);const live=(S.mode==='LIVE');
+  const badge=live?'color:#ff5d72;border-color:#ff5d72':'color:#7aa2ff;border-color:#7aa2ff';
+  const cell=(k,v)=>`<div><div class="mut" style="font-size:10px">${k}</div><div style="font-weight:700;font-size:13px">${v}</div></div>`;
+  return `<div class="glass" style="padding:14px 16px;min-width:210px;flex:1 1 210px;max-width:280px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span style="font-weight:800;letter-spacing:.5px">${ENG_MKT[e]?e.toUpperCase():e.toUpperCase()}</span>
+      <span class="badge" style="${badge};font-size:10px;font-weight:800">${live?'● REAL $':'DEMO'}</span>
+      <span class="mut" style="font-size:10px;margin-left:auto">${ENG_MKT[e]||''}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px">
+      ${cell('Invested','$'+inv.toFixed(2))}${cell('Free to buy','$'+free.toFixed(2))}
+      ${cell('Coins held',n)}${cell('Balance','$'+bal.toFixed(2))}
+    </div></div>`;
+}
 function syncTrades(){
   const el=id=>document.getElementById(id); if(!el('tstats'))return;
   let openRows='';
@@ -551,12 +574,13 @@ function syncTrades(){
       <td>${isQueued(e,s)?'<span class="mut">closing…</span>':`<button class="mini danger" onclick="closePos('${e}','${s}')">Close</button>`}</td></tr>`;});});
   const bar=ENGINES.filter(e=>Object.keys(E[e].S.positions||{}).length)
     .map(e=>`<button class="mini danger" onclick="closeAllEngine('${e}')">Close all ${e} (${Object.keys(E[e].S.positions||{}).length})</button>`).join('');
-  let wallet='';
-  ENGINES.forEach(e=>{const S=E[e].S;const p=S.positions||{};const n=Object.keys(p).length;const bal=+S.balance||0;
-    let inv=0;Object.keys(p).forEach(s=>{const o=p[s];inv+=(+o.amount||0)*(+(o.now||o.entry)||0);});
-    if(bal>0||n>0){wallet+=card(e.toUpperCase()+' — invested',`$${inv.toFixed(2)} · ${n} coin${n!=1?'s':''}`)
-      +card(e.toUpperCase()+' — free to buy','$'+Math.max(0,bal-inv).toFixed(2));}});
-  el('topen').innerHTML=(wallet?`<div class="cards" style="margin-bottom:10px">${wallet}</div>`:'')
+  const hasHoldings=e=>{const S=E[e].S;return (+S.balance||0)>0||Object.keys(S.positions||{}).length>0;};
+  const liveEng=ENGINES.filter(e=>E[e].S.mode==='LIVE'&&hasHoldings(e));
+  const demoEng=ENGINES.filter(e=>E[e].S.mode!=='LIVE'&&hasHoldings(e));
+  const grp=(label,list)=>list.length?`<div class="mut" style="margin:2px 0 8px;font-size:11px;letter-spacing:1.5px">${label}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">${list.map(e=>walletCard(e,E[e].S)).join('')}</div>`:'';
+  const wallet=grp('LIVE · REAL MONEY',liveEng)+grp('DEMO · PAPER',demoEng);
+  el('topen').innerHTML=wallet
     +(openRows?`${bar?`<div class="filterbar">${bar}</div>`:''}<div class="glass panel tblwrap"><table>
     <tr><th>Engine</th><th>Instrument</th><th>Side</th><th>Qty</th><th>Entry</th><th>Now</th><th>Cost&nbsp;$</th><th>Value&nbsp;$</th><th>Unreal.</th><th>Action</th></tr>${openRows}</table></div>`
     :'<p class="mut" style="padding:8px">No open positions right now.</p>');
